@@ -1,0 +1,39 @@
+
+services:
+  php:
+    build:
+      context: ./symfony-docker
+      target: frankenphp_dev
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-localhost:8741}, php:80
+      DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD:-Andfield}@database:3306/${MYSQL_DATABASE:-bddAndfield}?serverVersion=8.0&charset=utf8mb4
+    volumes:
+      - ./:/app
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "8741:80"
+      - "443:443"
+      - "443:443/udp"
+    depends_on:
+      - database
+
+###> doctrine/doctrine-bundle ###
+  database:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-bddAndfield}
+      MYSQL_USER: ${MYSQL_USER:-app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Andfield}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Andfield}
+    volumes:
+      - database_data:/var/lib/mysql
+
+volumes:
+  database_data:
+  caddy_data:
+  caddy_config:
+###< doctrine/doctrine-bundle ###

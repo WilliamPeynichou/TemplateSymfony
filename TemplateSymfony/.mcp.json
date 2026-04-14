@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "symfony": {
+      "type": "stdio",
+      "command": "php",
+      "args": [
+        "/Users/williampeynichou/TemplateSymfony/TemplateSymfony/bin/console",
+        "mcp:server"
+      ]
+    }
+  }
+}
