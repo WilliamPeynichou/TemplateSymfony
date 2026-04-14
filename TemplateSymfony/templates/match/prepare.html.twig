@@ -1,0 +1,135 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Préparer un match{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">Préparer un <em>match</em></h1>
+        <p class="page-header__sub">Importez deux équipes de base ou opposez une équipe créée à un adversaire fictif.</p>
+    </div>
+</div>
+
+<div class="page-body match-prepare">
+    <div class="match-prepare__layout">
+        <div class="form-card match-prepare__card">
+            <form method="post">
+                <div class="form-group">
+                    <label class="form-label" for="scenario">Scénario</label>
+                    <select id="scenario" name="scenario" class="form-control">
+                        <option value="base" {% if scenario == 'base' %}selected{% endif %}>Deux équipes de base</option>
+                        <option value="custom_vs_fictional" {% if scenario == 'custom_vs_fictional' %}selected{% endif %}>Une équipe créée contre une équipe fictive</option>
+                    </select>
+                </div>
+
+                {% if scenario == 'custom_vs_fictional' %}
+                    <div class="form-group">
+                        <label class="form-label" for="created_team">Équipe créée</label>
+                        <select id="created_team" name="created_team" class="form-control" {% if customTeams is empty %}disabled{% endif %}>
+                            <option value="">Sélectionnez une équipe</option>
+                            {% for team in customTeams %}
+                                <option value="{{ team.id }}" {% if app.request.request.get('created_team') == team.id %}selected{% endif %}>
+                                    {{ team.name }}{% if team.club %} · {{ team.club }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if customTeams is empty %}
+                            <div class="form-error">Créez d'abord une équipe personnalisée dans "Mes équipes".</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="fictional_name">Nom de l'équipe fictive</label>
+                        <input id="fictional_name"
+                               type="text"
+                               name="fictional_name"
+                               class="form-control"
+                               placeholder="Ex : FC Andfield Academy"
+                               value="{{ app.request.request.get('fictional_name', 'Équipe fictive') }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="fictional_players">Joueurs fictifs (optionnel)</label>
+                        <textarea id="fictional_players"
+                                  name="fictional_players"
+                                  class="form-control match-prepare__textarea"
+                                  placeholder="Format : numéro, nom, poste&#10;Ex : 1, Gardien adverse, GK">{{ app.request.request.get('fictional_players') }}</textarea>
+                    </div>
+                {% else %}
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="base_home">Équipe 1</label>
+                            <select id="base_home" name="base_home" class="form-control">
+                                <option value="liverpool" {% if app.request.request.get('base_home', 'liverpool') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
+                                <option value="paris" {% if app.request.request.get('base_home') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="base_away">Équipe 2</label>
+                            <select id="base_away" name="base_away" class="form-control">
+                                <option value="paris" {% if app.request.request.get('base_away', 'paris') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
+                                <option value="liverpool" {% if app.request.request.get('base_away') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
+                            </select>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="form-actions">
+                    <button class="btn btn--filled" type="submit">Préparer le match</button>
+                    <a href="{{ path('app_team_index') }}" class="btn">Retour aux équipes</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="match-prepare__hint">
+            <div class="card">
+                <div class="card__title">Ce que fait cette page</div>
+                <div class="card__sub">
+                    En mode "équipes de base", Liverpool et Paris sont importés ou mis à jour automatiquement.
+                    En mode "fictif", votre équipe réelle est opposée à un effectif généré ou saisi à la main.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if preview %}
+        <div class="match-preview">
+            <div class="match-preview__header">
+                <span class="badge badge--brand">{{ preview.home.players|length }} joueurs</span>
+                <strong>{{ preview.home.name }}</strong>
+                <span>vs</span>
+                <strong>{{ preview.away.name }}</strong>
+                <span class="badge badge--brand">{{ preview.away.players|length }} joueurs</span>
+            </div>
+
+            <div class="match-preview__grid">
+                {% for side in [preview.home, preview.away] %}
+                    <section class="card match-preview__team">
+                        <div class="card__title">{{ side.name }}</div>
+                        <div class="card__sub">{{ side.label }}</div>
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Joueur</th>
+                                        <th>Poste</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for player in side.players %}
+                                        <tr>
+                                            <td><span class="badge">{{ player.number }}</span></td>
+                                            <td>{{ player.name }}</td>
+                                            <td><span class="badge badge--brand">{{ player.position }}</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

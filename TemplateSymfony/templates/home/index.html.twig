@@ -1,0 +1,237 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Andfield — Gestion d'équipe de football{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ importmap('home') }}
+{% endblock %}
+
+{% block body %}
+
+<nav class="nav" id="nav">
+    <a href="/" class="nav__logo">Andfield</a>
+    <ul class="nav__links">
+        <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="#comment">Comment ça marche</a></li>
+        <li><a href="#sports">Sports</a></li>
+    </ul>
+    <a href="{{ path('app_login') }}" class="nav__cta">Se connecter</a>
+</nav>
+
+<section class="hero grain-overlay">
+    <span class="hero__bg-text" aria-hidden="true">⚽</span>
+    <div class="container">
+        <div class="hero__left">
+            <span class="hero__tag reveal">Gestion d'équipe sportive</span>
+            <h1 class="hero__title reveal reveal-delay-1">
+                <span class="line">Coachez</span><br>
+                <span class="line">avec <em>méthode</em></span><br>
+                <span class="line">et précision.</span>
+            </h1>
+        </div>
+        <div class="hero__right">
+            <p class="hero__subtitle reveal reveal-delay-2">
+                Andfield donne aux coachs un outil tactique complet — composition sur terrain interactif, instructions individuelles par joueur, gestion de l'effectif en un seul endroit.
+            </p>
+            <div class="hero__actions reveal reveal-delay-3">
+                <a href="{{ path('app_register') }}" class="btn-primary">Commencer gratuitement</a>
+                <a href="{{ path('app_login') }}" class="btn-ghost">Se connecter</a>
+            </div>
+        </div>
+    </div>
+    <div class="hero__scroll-indicator">
+        <div class="scroll-line"></div>
+        <span>Scroll</span>
+    </div>
+</section>
+
+<div class="stats">
+    <div class="container">
+        <div class="stat-item reveal">
+            <span class="stat-number">11<span class="stat-unit">+</span></span>
+            <span class="stat-label">Joueurs placés sur le terrain</span>
+        </div>
+        <div class="stat-item reveal reveal-delay-1">
+            <span class="stat-number">25<span class="stat-unit">+</span></span>
+            <span class="stat-label">Joueurs par effectif</span>
+        </div>
+        <div class="stat-item reveal reveal-delay-2">
+            <span class="stat-number">∞</span>
+            <span class="stat-label">Équipes gérées</span>
+        </div>
+        <div class="stat-item reveal reveal-delay-3">
+            <span class="stat-number">1<span class="stat-unit">er</span></span>
+            <span class="stat-label">Sport disponible : football</span>
+        </div>
+    </div>
+</div>
+
+<section class="approach" id="comment">
+    <div class="container split-layout">
+        <div class="aside-sticky">
+            <span class="section-label reveal">Comment ça marche</span>
+            <h2 class="reveal reveal-delay-1">De l'effectif au <em>terrain</em> en quelques clics.</h2>
+        </div>
+        <ul class="approach-list">
+            <li class="approach-item reveal">
+                <span class="approach-number">01</span>
+                <div>
+                    <h3>Créez votre équipe</h3>
+                    <p>Renseignez le nom, le club et la saison. Gérez plusieurs équipes depuis un seul espace coach.</p>
+                </div>
+            </li>
+            <li class="approach-item reveal reveal-delay-1">
+                <span class="approach-number">02</span>
+                <div>
+                    <h3>Constituez votre effectif</h3>
+                    <p>Ajoutez chaque joueur avec sa fiche complète : nom, numéro, poste, pied fort, taille, poids et photo.</p>
+                </div>
+            </li>
+            <li class="approach-item reveal reveal-delay-2">
+                <span class="approach-number">03</span>
+                <div>
+                    <h3>Composez sur le terrain</h3>
+                    <p>Glissez-déposez vos joueurs directement sur le terrain de football. Positionnement libre, sauvegarde automatique.</p>
+                </div>
+            </li>
+            <li class="approach-item reveal reveal-delay-3">
+                <span class="approach-number">04</span>
+                <div>
+                    <h3>Donnez vos consignes</h3>
+                    <p>Cliquez sur un joueur pour ouvrir sa fiche et lui rédiger des instructions tactiques précises et personnalisées.</p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</section>
+
+<section class="manifesto grain-overlay">
+    <div class="container">
+        <div class="manifesto__inner">
+            <span class="section-label reveal" style="color: var(--brand-light);">Notre vision</span>
+            <blockquote class="reveal reveal-delay-1">
+                "Le <em>terrain</em> est le meilleur langage du coach. Andfield le met entre ses mains, digital et précis, pour que chaque consigne arrive au bon joueur au bon moment."
+            </blockquote>
+            <cite class="reveal reveal-delay-2">— L'équipe Andfield</cite>
+        </div>
+    </div>
+    <div class="manifesto__deco" aria-hidden="true"></div>
+</section>
+
+<section class="services" id="fonctionnalites">
+    <div class="container">
+        <div class="services__header">
+            <div>
+                <span class="section-label reveal">Fonctionnalités</span>
+                <h2 class="reveal reveal-delay-1">Tout ce dont le coach <em>a besoin.</em></h2>
+            </div>
+            <p class="reveal reveal-delay-2">
+                Un outil pensé pour les coachs de sport collectif, du football amateur au semi-professionnel.
+            </p>
+        </div>
+        <div class="services__grid">
+            <div class="service-card reveal">
+                <span class="service-card__index">01</span>
+                <h3>Terrain interactif</h3>
+                <p>Un terrain de football fidèle avec toutes les lignes. Positionnement des joueurs en drag & drop, libre et intuitif.</p>
+                <a href="{{ path('app_register') }}" class="service-card__link">Essayer</a>
+            </div>
+            <div class="service-card reveal reveal-delay-1">
+                <span class="service-card__index">02</span>
+                <h3>Fiche joueur complète</h3>
+                <p>Nom, numéro de maillot, poste, date de naissance, pied fort, taille, poids et photo de profil.</p>
+                <a href="{{ path('app_register') }}" class="service-card__link">Essayer</a>
+            </div>
+            <div class="service-card reveal reveal-delay-2">
+                <span class="service-card__index">03</span>
+                <h3>Instructions tactiques</h3>
+                <p>Cliquez sur un joueur placé sur le terrain pour lui rédiger des consignes individuelles et précises.</p>
+                <a href="{{ path('app_register') }}" class="service-card__link">Essayer</a>
+            </div>
+            <div class="service-card reveal reveal-delay-1">
+                <span class="service-card__index">04</span>
+                <h3>Multi-équipes</h3>
+                <p>Gérez plusieurs équipes depuis un seul compte coach. Chaque équipe a son propre effectif et sa composition.</p>
+                <a href="{{ path('app_register') }}" class="service-card__link">Essayer</a>
+            </div>
+            <div class="service-card reveal reveal-delay-2">
+                <span class="service-card__index">05</span>
+                <h3>Sauvegarde automatique</h3>
+                <p>Chaque modification est sauvegardée instantanément. Revenez à votre composition n'importe quand.</p>
+                <a href="{{ path('app_register') }}" class="service-card__link">Essayer</a>
+            </div>
+            <div class="service-card reveal reveal-delay-3">
+                <span class="service-card__index">06</span>
+                <h3>Bientôt : autres sports</h3>
+                <p>Rugby, basketball, handball… D'autres sports collectifs arrivent prochainement sur la plateforme.</p>
+                <span class="service-card__link" style="opacity:.4;cursor:default;">Bientôt disponible</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="services" id="sports" style="background:var(--warm-white);padding-top:0;">
+    <div class="container">
+        <div class="services__header" style="margin-bottom:2rem;">
+            <div>
+                <span class="section-label reveal">Sports supportés</span>
+                <h2 class="reveal reveal-delay-1">Commencer par <em>le football.</em></h2>
+            </div>
+        </div>
+        <div class="services__grid" style="grid-template-columns:repeat(4,1fr);">
+            <div class="service-card reveal" style="background:var(--hazel-green-100);border-left:3px solid var(--brand);">
+                <span style="font-size:2rem;">⚽</span>
+                <h3>Football</h3>
+                <span class="badge badge--brand">Disponible</span>
+            </div>
+            <div class="service-card reveal reveal-delay-1" style="opacity:.5;">
+                <span style="font-size:2rem;">🏉</span>
+                <h3>Rugby</h3>
+                <span class="badge">Bientôt</span>
+            </div>
+            <div class="service-card reveal reveal-delay-2" style="opacity:.5;">
+                <span style="font-size:2rem;">🏀</span>
+                <h3>Basketball</h3>
+                <span class="badge">Bientôt</span>
+            </div>
+            <div class="service-card reveal reveal-delay-3" style="opacity:.5;">
+                <span style="font-size:2rem;">🤾</span>
+                <h3>Handball</h3>
+                <span class="badge">Bientôt</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="contact" id="contact">
+    <div class="container">
+        <h2 class="reveal">
+            Prêt à prendre<br>
+            le <em>contrôle</em> ?
+        </h2>
+        <div class="contact__right">
+            <p class="reveal reveal-delay-1">
+                Créez votre compte gratuitement et composez votre première équipe en moins de 5 minutes.
+            </p>
+            <a href="{{ path('app_register') }}" class="btn-primary reveal reveal-delay-2">
+                Créer mon compte
+            </a>
+            <a href="{{ path('app_login') }}" class="contact__email reveal reveal-delay-3">
+                Déjà un compte ? Se connecter →
+            </a>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="container">
+        <a href="/" class="footer__logo">Andfield</a>
+        <span class="footer__copy">© {{ "now"|date("Y") }} Andfield. Sport collectif, gestion moderne.</span>
+    </div>
+</footer>
+
+{% endblock %}

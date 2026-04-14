@@ -1,0 +1,233 @@
+{% extends 'base.html.twig' %}
+{% block title %}Composition — {{ team.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/composition.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ importmap('app') }}
+    {{ importmap('composition') }}
+{% endblock %}
+
+{% block body %}
+<div
+    data-controller="pitch sidebar"
+    data-pitch-save-url-value="{{ path('app_composition_save', {id: team.id}) }}"
+    data-pitch-team-id-value="{{ team.id }}"
+    data-action="composition:updateInstructions->pitch#updateInstructionsFromEvent composition:removePlayer->pitch#removePlayerFromEvent pitch:playerSelected->sidebar#open"
+    class="composition-layout"
+>
+    {# ── Zone terrain ──────────────────────────────────────── #}
+    <div class="pitch-area">
+        <div class="pitch-toolbar">
+            <div class="pitch-toolbar__left">
+                <a href="{{ path('app_team_index') }}" class="pitch-back" title="Retour aux équipes">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                </a>
+                <div>
+                    <div class="pitch-toolbar__title"><em>{{ team.name }}</em></div>
+                    {% if team.club or team.season %}
+                        <div class="pitch-toolbar__sub">{{ team.club }}{% if team.club and team.season %} · {% endif %}{{ team.season }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="pitch-toolbar__actions">
+                <span class="save-indicator" data-pitch-target="saveIndicator"></span>
+                <a href="{{ path('app_plan_index', {teamId: team.id}) }}" class="btn btn--sm">Plans</a>
+                <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="btn btn--sm">Effectif</a>
+            </div>
+        </div>
+
+        <div class="pitch-container">
+            <div class="pitch-wrapper" data-pitch-target="wrapper">
+                {# ── Terrain SVG ──────────────────────────────── #}
+                <svg class="pitch-svg" viewBox="0 0 68 105" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="68" height="105" fill="#1a3319"/>
+                    {% for i in 0..6 %}
+                        <rect x="0" y="{{ i * 15 }}" width="68" height="7.5" fill="{{ i % 2 == 0 ? '#1a3319' : '#1e3d1e' }}"/>
+                    {% endfor %}
+                    <rect x="1" y="1" width="66" height="103" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <line x1="1" y1="52.5" x2="67" y2="52.5" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <circle cx="34" cy="52.5" r="9.15" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <circle cx="34" cy="52.5" r="0.5" fill="#3d6b3d"/>
+                    <rect x="13.84" y="1" width="40.32" height="16.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <rect x="24.84" y="1" width="18.32" height="5.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <rect x="29.3" y="0" width="9.4" height="1" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <circle cx="34" cy="12" r="0.5" fill="#3d6b3d"/>
+                    <path d="M 20.16 17.5 A 9.15 9.15 0 0 1 47.84 17.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <rect x="13.84" y="87.5" width="40.32" height="16.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <rect x="24.84" y="98.5" width="18.32" height="5.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <rect x="29.3" y="104" width="9.4" height="1" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <circle cx="34" cy="93" r="0.5" fill="#3d6b3d"/>
+                    <path d="M 20.16 87.5 A 9.15 9.15 0 0 0 47.84 87.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <path d="M 1 3.5 A 2.5 2.5 0 0 0 3.5 1" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <path d="M 64.5 1 A 2.5 2.5 0 0 0 67 3.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <path d="M 1 101.5 A 2.5 2.5 0 0 1 3.5 104" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <path d="M 64.5 104 A 2.5 2.5 0 0 1 67 101.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                </svg>
+
+                {# ── Joueurs placés ────────────────────────────── #}
+                <div class="pitch-players" data-pitch-target="players">
+                    {% for playerId, pos in positions %}
+                        {% set player = null %}
+                        {% for p in players %}
+                            {% if p.id == playerId %}{% set player = p %}{% endif %}
+                        {% endfor %}
+                        {% if player %}
+                            <div class="player-token"
+                                 data-player-id="{{ player.id }}"
+                                 data-player-data="{{ {
+                                     id: player.id,
+                                     firstName: player.firstName,
+                                     lastName: player.lastName,
+                                     number: player.number,
+                                     position: player.position,
+                                     photo: player.photo,
+                                     age: player.age,
+                                     strongFoot: player.strongFoot,
+                                     height: player.height,
+                                     weight: player.weight
+                                 }|json_encode }}"
+                                 data-instructions="{{ pos.instructions }}"
+                                 draggable="true"
+                                 style="left:{{ pos.posX }}%;top:{{ pos.posY }}%">
+                                <div class="player-token__circle">{{ player.number }}</div>
+                                <div class="player-token__name">{{ player.lastName }}</div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Panneau droit ─────────────────────────────────────── #}
+    <div class="right-panel" data-sidebar-target="panel">
+
+        {# ── Onglets ─────────────────────────────────────────── #}
+        <div class="panel-tabs">
+            <button class="panel-tab panel-tab--active" data-sidebar-target="benchTab" data-action="click->sidebar#showBench">
+                Disponibles
+                <span class="panel-tab__badge" data-sidebar-target="benchCount">{{ benchPlayers|length }}</span>
+            </button>
+            <button class="panel-tab panel-tab--player" data-sidebar-target="playerTab">
+                <span data-sidebar-target="playerTabLabel">Joueur</span>
+                <span class="panel-tab__close" data-action="click->sidebar#close">×</span>
+            </button>
+        </div>
+
+        {# ── Panel effectif (bench) ───────────────────────────── #}
+        <div class="panel-section panel-section--bench" data-sidebar-target="benchPanel">
+
+            {# Filtres poste #}
+            <div class="pos-filters">
+                <button class="pos-filter pos-filter--active" data-action="click->sidebar#filterBench" data-filter="all">Tous</button>
+                <button class="pos-filter" data-action="click->sidebar#filterBench" data-filter="GK">GK</button>
+                <button class="pos-filter" data-action="click->sidebar#filterBench" data-filter="DEF">Déf</button>
+                <button class="pos-filter" data-action="click->sidebar#filterBench" data-filter="MIL">Mil</button>
+                <button class="pos-filter" data-action="click->sidebar#filterBench" data-filter="ATT">Att</button>
+            </div>
+
+            {# Liste joueurs #}
+            <div class="bench-scroll">
+                <div class="bench-list" data-pitch-target="bench">
+                    {% for player in benchPlayers %}
+                        {% set posGroup = player.position == 'GK' ? 'GK' : (player.position in ['CB','LB','RB'] ? 'DEF' : (player.position in ['CDM','CM','CAM'] ? 'MIL' : 'ATT')) %}
+                        <div class="bench-card"
+                             draggable="true"
+                             data-player-id="{{ player.id }}"
+                             data-pos-group="{{ posGroup }}"
+                             data-player-data="{{ {
+                                 id:         player.id,
+                                 firstName:  player.firstName,
+                                 lastName:   player.lastName,
+                                 number:     player.number,
+                                 position:   player.position,
+                                 photo:      player.photo,
+                                 age:        player.age,
+                                 strongFoot: player.strongFoot,
+                                 height:     player.height,
+                                 weight:     player.weight
+                             }|json_encode }}">
+                            {% if player.photo %}
+                                <img src="/uploads/players/{{ player.photo }}" class="bench-card__photo" alt="">
+                            {% else %}
+                                <div class="bench-card__avatar bench-card__avatar--{{ posGroup|lower }}">{{ player.firstName|slice(0,1) }}{{ player.lastName|slice(0,1) }}</div>
+                            {% endif %}
+                            <div class="bench-card__info">
+                                <div class="bench-card__name">{{ player.lastName }}</div>
+                                <div class="bench-card__meta">
+                                    <span class="bench-card__num">#{{ player.number }}</span>
+                                    <span class="pos-badge pos-badge--{{ posGroup|lower }}">{{ player.position }}</span>
+                                </div>
+                            </div>
+                            <div class="bench-card__drag">⣿</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if benchPlayers|length == 0 %}
+                    <div class="bench-all-placed">
+                        <span style="font-size:1.5rem;">✓</span>
+                        <span>Tous les joueurs sont sur le terrain</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Panel fiche joueur ───────────────────────────────── #}
+        <div class="panel-section panel-section--player" data-sidebar-target="playerPanel">
+
+            <div class="fiche-header" data-sidebar-target="header">
+                <div class="fiche-player-row">
+                    <div class="fiche-avatar" data-sidebar-target="avatar"></div>
+                    <div class="fiche-player-details">
+                        <div class="fiche-name" data-sidebar-target="name"></div>
+                        <div class="fiche-badges">
+                            <span class="badge badge--brand" data-sidebar-target="number"></span>
+                            <span class="badge" data-sidebar-target="position"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fiche-body" data-sidebar-target="body">
+                <div class="fiche-stats">
+                    <div class="fiche-stat">
+                        <span class="fiche-stat__label">Âge</span>
+                        <span class="fiche-stat__value" data-sidebar-target="age">—</span>
+                    </div>
+                    <div class="fiche-stat">
+                        <span class="fiche-stat__label">Pied</span>
+                        <span class="fiche-stat__value" data-sidebar-target="foot">—</span>
+                    </div>
+                    <div class="fiche-stat">
+                        <span class="fiche-stat__label">Taille</span>
+                        <span class="fiche-stat__value" data-sidebar-target="height">—</span>
+                    </div>
+                    <div class="fiche-stat">
+                        <span class="fiche-stat__label">Poids</span>
+                        <span class="fiche-stat__value" data-sidebar-target="weight">—</span>
+                    </div>
+                </div>
+
+                <div class="fiche-instructions-section">
+                    <span class="fiche-label">Instructions tactiques</span>
+                    <textarea class="instructions-textarea"
+                              data-sidebar-target="instructions"
+                              data-action="blur->sidebar#saveInstructions"
+                              placeholder="Ex: Presse haut dès la perte de balle, couvre le couloir gauche en phase défensive…"></textarea>
+                </div>
+            </div>
+
+            <div class="fiche-footer" data-sidebar-target="footer">
+                <button class="btn btn--sm btn--filled" data-action="sidebar#saveInstructions" style="flex:1;">
+                    Sauvegarder
+                </button>
+                <button class="btn-remove" data-action="sidebar#removePlayer">Retirer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

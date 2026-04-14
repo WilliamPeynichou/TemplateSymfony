@@ -1,0 +1,20 @@
+/* ─── Bench cards placed on canvas ────────────────────────── */
+.bench-card--placed {
+  opacity: 0.45;
+  cursor: default;
+}
+.bench-card--placed:hover {
+  background: inherit;
+}
+.bench-card--placed:active {
+  cursor: default;
+}
+
+.bench-card__placed-icon {
+  color: var(--brand, #4a7a4a);
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}

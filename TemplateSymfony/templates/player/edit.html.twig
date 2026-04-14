@@ -1,0 +1,77 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Modifier {{ player.fullName }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">Modifier <em>{{ player.fullName }}</em></h1>
+        <p class="page-header__sub">{{ team.name }}</p>
+    </div>
+    <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="btn">← Retour</a>
+</div>
+<div class="page-body">
+    <div class="form-card" style="max-width:760px;">
+        {{ form_start(form, {attr: {enctype: 'multipart/form-data'}}) }}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.firstName) }}</label>
+                    {{ form_widget(form.firstName, {attr: {class: 'form-control'}}) }}
+                    <div class="form-error">{{ form_errors(form.firstName) }}</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.lastName) }}</label>
+                    {{ form_widget(form.lastName, {attr: {class: 'form-control'}}) }}
+                    <div class="form-error">{{ form_errors(form.lastName) }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.number) }}</label>
+                    {{ form_widget(form.number, {attr: {class: 'form-control'}}) }}
+                    <div class="form-error">{{ form_errors(form.number) }}</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.position) }}</label>
+                    {{ form_widget(form.position, {attr: {class: 'form-control'}}) }}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.dateOfBirth) }}</label>
+                    {{ form_widget(form.dateOfBirth, {attr: {class: 'form-control'}}) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.strongFoot) }}</label>
+                    {{ form_widget(form.strongFoot, {attr: {class: 'form-control'}}) }}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.height) }}</label>
+                    {{ form_widget(form.height, {attr: {class: 'form-control'}}) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.weight) }}</label>
+                    {{ form_widget(form.weight, {attr: {class: 'form-control'}}) }}
+                </div>
+            </div>
+            {% if player.photo %}
+                <div class="form-group">
+                    <label class="form-label">Photo actuelle</label>
+                    <img src="/uploads/players/{{ player.photo }}" alt=""
+                         style="width:80px;height:80px;object-fit:cover;display:block;margin-bottom:0.75rem;">
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <label class="form-label">{{ form_label(form.photoFile) }}</label>
+                {{ form_widget(form.photoFile) }}
+                <div class="form-error">{{ form_errors(form.photoFile) }}</div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn--filled" type="submit">Enregistrer</button>
+                <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="btn">Annuler</a>
+            </div>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

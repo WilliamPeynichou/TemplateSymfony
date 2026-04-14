@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+{% block title %}Créer un compte{% endblock %}
+
+{% block javascripts %}{{ importmap('app') }}{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-panel auth-panel--left">
+        <div class="auth-brand">
+            Votre <em>terrain</em>, vos règles.
+        </div>
+        <p class="auth-tagline">
+            Créez votre espace coach en moins d'une minute. Gérez vos équipes, composez votre effectif, donnez vos consignes tactiques.
+        </p>
+    </div>
+    <div class="auth-panel auth-panel--right">
+        <h1 class="auth-form-title">Créer un compte</h1>
+        <p class="auth-form-sub">Rejoignez Andfield gratuitement.</p>
+
+        {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.firstName) }}</label>
+                    {{ form_widget(form.firstName, {attr: {class: 'form-control'}}) }}
+                    <div class="form-error">{{ form_errors(form.firstName) }}</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.lastName) }}</label>
+                    {{ form_widget(form.lastName, {attr: {class: 'form-control'}}) }}
+                    <div class="form-error">{{ form_errors(form.lastName) }}</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form_label(form.email) }}</label>
+                {{ form_widget(form.email, {attr: {class: 'form-control'}}) }}
+                <div class="form-error">{{ form_errors(form.email) }}</div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.plainPassword.first) }}</label>
+                    {{ form_widget(form.plainPassword.first, {attr: {class: 'form-control'}}) }}
+                    <div class="form-error">{{ form_errors(form.plainPassword.first) }}</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ form_label(form.plainPassword.second) }}</label>
+                    {{ form_widget(form.plainPassword.second, {attr: {class: 'form-control'}}) }}
+                    <div class="form-error">{{ form_errors(form.plainPassword) }}</div>
+                </div>
+            </div>
+            <button class="btn btn--filled" type="submit" style="width:100%;justify-content:center;">
+                Créer mon compte
+            </button>
+        {{ form_end(form) }}
+
+        <p style="margin-top:2rem;font-size:var(--text-sm);color:var(--stone-600);">
+            Déjà un compte ?
+            <a href="{{ path('app_login') }}" class="auth-link">Se connecter</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

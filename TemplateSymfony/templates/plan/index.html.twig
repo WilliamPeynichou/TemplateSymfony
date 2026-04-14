@@ -1,0 +1,70 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Plans — {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">Plans <em>{{ team.name }}</em></h1>
+        <p class="page-header__sub">{{ plans|length }} plan{{ plans|length > 1 ? 's' : '' }} de coaching</p>
+    </div>
+    <div style="display:flex;gap:1rem;">
+        <a href="{{ path('app_composition_index', {id: team.id}) }}" class="btn">⚽ Composition</a>
+    </div>
+</div>
+
+<div class="page-body">
+    {# Nouveau plan #}
+    <div class="card" style="margin-bottom:1.5rem;padding:1.5rem;">
+        <form method="post" action="{{ path('app_plan_new', {teamId: team.id}) }}" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+                <label class="form-label" style="display:block;margin-bottom:0.35rem;font-size:var(--text-xs);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--stone-500);">Nom du plan</label>
+                <input type="text" name="name" class="form-control" placeholder="Ex: Plan A · Pressing haut · 4-3-3" required style="width:100%;">
+            </div>
+            <div style="flex:2;min-width:200px;">
+                <label class="form-label" style="display:block;margin-bottom:0.35rem;font-size:var(--text-xs);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--stone-500);">Description (optionnel)</label>
+                <input type="text" name="description" class="form-control" placeholder="Ex: Bloc médian, transitions rapides…" style="width:100%;">
+            </div>
+            <button type="submit" class="btn btn--filled">+ Créer le plan</button>
+        </form>
+    </div>
+
+    {% if plans|length == 0 %}
+        <div class="card-grid">
+            <div class="card card--empty">
+                <span style="font-size:2.5rem;">📋</span>
+                <p style="font-size:var(--text-sm);color:var(--stone-600);max-width:32ch;">
+                    Aucun plan de coaching. Créez votre premier plan pour commencer à organiser votre jeu.
+                </p>
+            </div>
+        </div>
+    {% else %}
+        <div class="card-grid">
+            {% for plan in plans %}
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <a href="{{ path('app_plan_canvas', {teamId: team.id, id: plan.id}) }}"
+                       style="display:block;padding:1.5rem 1.5rem 1rem;text-decoration:none;color:inherit;">
+                        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.5rem;">
+                            <span style="font-family:var(--font-display);font-size:var(--text-xl);color:var(--stone-900);letter-spacing:var(--tracking-tight);">{{ plan.name }}</span>
+                            <span style="font-size:var(--text-xs);color:var(--stone-400);white-space:nowrap;margin-top:0.3rem;">{{ plan.updatedAt|date('d/m/Y') }}</span>
+                        </div>
+                        {% if plan.description %}
+                            <p style="font-size:var(--text-sm);color:var(--stone-500);line-height:1.5;margin:0 0 0.75rem;">{{ plan.description }}</p>
+                        {% endif %}
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span class="badge badge--brand">{{ plan.notes|length }} joueur{{ plan.notes|length > 1 ? 's' : '' }}</span>
+                            <span style="font-size:var(--text-xs);color:var(--brand);font-weight:500;">Ouvrir →</span>
+                        </div>
+                    </a>
+                    <div style="border-top:1px solid var(--stone-100);padding:0.75rem 1.5rem;background:var(--cream);display:flex;justify-content:flex-end;">
+                        <form method="post" action="{{ path('app_plan_delete', {teamId: team.id, id: plan.id}) }}"
+                              onsubmit="return confirm('Supprimer « {{ plan.name }} » ?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_plan_' ~ plan.id) }}">
+                            <button type="submit" class="btn btn--sm btn--danger">Supprimer</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
