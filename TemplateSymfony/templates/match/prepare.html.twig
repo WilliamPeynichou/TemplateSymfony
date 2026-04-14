@@ -15,7 +15,8 @@
             <form method="post">
                 <div class="form-group">
                     <label class="form-label" for="scenario">Scénario</label>
-                    <select id="scenario" name="scenario" class="form-control">
+                    <select id="scenario" name="scenario" class="form-control"
+                            onchange="window.location='{{ path('app_match_prepare') }}?scenario=' + this.value">
                         <option value="base" {% if scenario == 'base' %}selected{% endif %}>Deux équipes de base</option>
                         <option value="custom_vs_fictional" {% if scenario == 'custom_vs_fictional' %}selected{% endif %}>Une équipe créée contre une équipe fictive</option>
                     </select>
@@ -86,50 +87,10 @@
                 <div class="card__sub">
                     En mode "équipes de base", Liverpool et Paris sont importés ou mis à jour automatiquement.
                     En mode "fictif", votre équipe réelle est opposée à un effectif généré ou saisi à la main.
+                    Une fois validé, vous arrivez sur un terrain interactif pour placer les deux équipes.
                 </div>
             </div>
         </div>
     </div>
-
-    {% if preview %}
-        <div class="match-preview">
-            <div class="match-preview__header">
-                <span class="badge badge--brand">{{ preview.home.players|length }} joueurs</span>
-                <strong>{{ preview.home.name }}</strong>
-                <span>vs</span>
-                <strong>{{ preview.away.name }}</strong>
-                <span class="badge badge--brand">{{ preview.away.players|length }} joueurs</span>
-            </div>
-
-            <div class="match-preview__grid">
-                {% for side in [preview.home, preview.away] %}
-                    <section class="card match-preview__team">
-                        <div class="card__title">{{ side.name }}</div>
-                        <div class="card__sub">{{ side.label }}</div>
-                        <div class="table-wrap">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Joueur</th>
-                                        <th>Poste</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for player in side.players %}
-                                        <tr>
-                                            <td><span class="badge">{{ player.number }}</span></td>
-                                            <td>{{ player.name }}</td>
-                                            <td><span class="badge badge--brand">{{ player.position }}</span></td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
 </div>
 {% endblock %}

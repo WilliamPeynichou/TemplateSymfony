@@ -28,6 +28,10 @@ return [
         'path' => './assets/plan.js',
         'entrypoint' => true,
     ],
+    'match' => [
+        'path' => './assets/match.js',
+        'entrypoint' => true,
+    ],
     '@hotwired/stimulus' => [
         'version' => '3.2.2',
     ],

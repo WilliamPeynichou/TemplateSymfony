@@ -28,8 +28,9 @@ class MatchController extends AbstractController
             fn (Team $team) => !in_array($team->getClub(), ['Liverpool FC', 'Paris Saint-Germain'], true)
         ));
 
-        $scenario = (string) $request->request->get('scenario', 'base');
-        $preview = null;
+        $scenario = (string) ($request->isMethod('POST')
+            ? $request->request->get('scenario', 'base')
+            : $request->query->get('scenario', 'base'));
 
         if ($request->isMethod('POST')) {
             if ($scenario === 'custom_vs_fictional') {
@@ -38,14 +39,17 @@ class MatchController extends AbstractController
                 if (!$selectedTeam) {
                     $this->addFlash('error', 'Sélectionnez une équipe créée pour préparer ce match.');
                 } else {
-                    $preview = [
+                    $request->getSession()->set('match_preparation', [
                         'scenario' => $scenario,
-                        'home' => $this->buildRealTeamPreview($selectedTeam, 'Mon équipe'),
-                        'away' => $this->buildFictionalTeamPreview(
+                        'home' => $this->buildRealTeamData($selectedTeam, 'home', 'Mon équipe'),
+                        'away' => $this->buildFictionalTeamData(
+                            'away',
                             trim((string) $request->request->get('fictional_name', 'Équipe fictive')),
                             (string) $request->request->get('fictional_players', '')
                         ),
-                    ];
+                    ]);
+
+                    return $this->redirectToRoute('app_match_board');
                 }
             } else {
                 $baseTeams = $baseTeamImporter->ensureBaseTeams($coach);
@@ -57,20 +61,34 @@ class MatchController extends AbstractController
                 } elseif ($homeKey === $awayKey) {
                     $this->addFlash('error', 'Choisissez deux équipes de base différentes.');
                 } else {
-                    $preview = [
+                    $request->getSession()->set('match_preparation', [
                         'scenario' => 'base',
-                        'home' => $this->buildRealTeamPreview($baseTeams[$homeKey], 'Équipe de base'),
-                        'away' => $this->buildRealTeamPreview($baseTeams[$awayKey], 'Équipe de base'),
-                    ];
+                        'home' => $this->buildRealTeamData($baseTeams[$homeKey], 'home', 'Équipe de base'),
+                        'away' => $this->buildRealTeamData($baseTeams[$awayKey], 'away', 'Équipe de base'),
+                    ]);
+
+                    return $this->redirectToRoute('app_match_board');
                 }
             }
         }
 
         return $this->render('match/prepare.html.twig', [
             'scenario' => $scenario,
-            'teams' => $teams,
             'customTeams' => $customTeams,
-            'preview' => $preview,
+        ]);
+    }
+
+    #[Route('/board', name: 'app_match_board', methods: ['GET'])]
+    public function board(Request $request): Response
+    {
+        $preparation = $request->getSession()->get('match_preparation');
+        if (!is_array($preparation) || !isset($preparation['home'], $preparation['away'])) {
+            $this->addFlash('error', 'Préparez d\'abord un match avant d\'ouvrir le terrain.');
+            return $this->redirectToRoute('app_match_prepare');
+        }
+
+        return $this->render('match/board.html.twig', [
+            'match' => $preparation,
         ]);
     }
 
@@ -89,21 +107,33 @@ class MatchController extends AbstractController
     }
 
     /**
-     * @return array{name: string, label: string, players: list<array{number: int, name: string, position: string}>}
+     * @return array{
+     *   name: string,
+     *   label: string,
+     *   side: string,
+     *   type: string,
+     *   players: list<array{id: string, name: string, shortName: string, number: int, position: string, side: string, photo: ?string}>
+     * }
      */
-    private function buildRealTeamPreview(Team $team, string $label): array
+    private function buildRealTeamData(Team $team, string $side, string $label): array
     {
         $players = $team->getPlayers()->toArray();
         usort($players, fn (Player $left, Player $right) => $left->getNumber() <=> $right->getNumber());
 
         return [
-            'name' => $team->getName(),
+            'name' => (string) $team->getName(),
             'label' => $label,
+            'side' => $side,
+            'type' => 'real',
             'players' => array_map(
                 fn (Player $player) => [
-                    'number' => (int) $player->getNumber(),
+                    'id' => $side . '-player-' . $player->getId(),
                     'name' => $player->getFullName(),
+                    'shortName' => (string) $player->getLastName(),
+                    'number' => (int) $player->getNumber(),
                     'position' => (string) $player->getPosition(),
+                    'side' => $side,
+                    'photo' => $player->getPhoto(),
                 ],
                 $players
             ),
@@ -111,13 +141,19 @@ class MatchController extends AbstractController
     }
 
     /**
-     * @return array{name: string, label: string, players: list<array{number: int, name: string, position: string}>}
+     * @return array{
+     *   name: string,
+     *   label: string,
+     *   side: string,
+     *   type: string,
+     *   players: list<array{id: string, name: string, shortName: string, number: int, position: string, side: string, photo: ?string}>
+     * }
      */
-    private function buildFictionalTeamPreview(string $name, string $rawPlayers): array
+    private function buildFictionalTeamData(string $side, string $name, string $rawPlayers): array
     {
-        $players = $this->parseFictionalPlayers($rawPlayers);
+        $players = $this->parseFictionalPlayers($side, $rawPlayers);
         if ($players === []) {
-            $players = $this->getDefaultFictionalPlayers();
+            $players = $this->getDefaultFictionalPlayers($side);
         }
 
         usort($players, fn (array $left, array $right) => $left['number'] <=> $right['number']);
@@ -125,20 +161,22 @@ class MatchController extends AbstractController
         return [
             'name' => $name !== '' ? $name : 'Équipe fictive',
             'label' => 'Équipe fictive',
+            'side' => $side,
+            'type' => 'fictional',
             'players' => $players,
         ];
     }
 
     /**
-     * @return list<array{number: int, name: string, position: string}>
+     * @return list<array{id: string, name: string, shortName: string, number: int, position: string, side: string, photo: null}>
      */
-    private function parseFictionalPlayers(string $rawPlayers): array
+    private function parseFictionalPlayers(string $side, string $rawPlayers): array
     {
         $lines = preg_split('/\R/', $rawPlayers) ?: [];
         $players = [];
         $allowedPositions = array_values(Player::POSITIONS);
 
-        foreach ($lines as $line) {
+        foreach ($lines as $index => $line) {
             $line = trim($line);
             if ($line === '') {
                 continue;
@@ -154,10 +192,15 @@ class MatchController extends AbstractController
                 continue;
             }
 
+            $name = $parts[1];
             $players[] = [
+                'id' => sprintf('%s-fictional-%d', $side, $index + 1),
+                'name' => $name,
+                'shortName' => $this->extractShortName($name),
                 'number' => (int) $parts[0],
-                'name' => $parts[1],
                 'position' => $position,
+                'side' => $side,
+                'photo' => null,
             ];
         }
 
@@ -165,22 +208,32 @@ class MatchController extends AbstractController
     }
 
     /**
-     * @return list<array{number: int, name: string, position: string}>
+     * @return list<array{id: string, name: string, shortName: string, number: int, position: string, side: string, photo: null}>
      */
-    private function getDefaultFictionalPlayers(): array
+    private function getDefaultFictionalPlayers(string $side): array
     {
         return [
-            ['number' => 1, 'name' => 'Gardien fictif', 'position' => 'GK'],
-            ['number' => 2, 'name' => 'Défenseur droit fictif', 'position' => 'RB'],
-            ['number' => 4, 'name' => 'Défenseur central A', 'position' => 'CB'],
-            ['number' => 5, 'name' => 'Défenseur central B', 'position' => 'CB'],
-            ['number' => 3, 'name' => 'Latéral gauche fictif', 'position' => 'LB'],
-            ['number' => 6, 'name' => 'Milieu sentinelle', 'position' => 'CDM'],
-            ['number' => 8, 'name' => 'Milieu relayeur', 'position' => 'CM'],
-            ['number' => 10, 'name' => 'Milieu créatif', 'position' => 'CAM'],
-            ['number' => 7, 'name' => 'Ailier droit fictif', 'position' => 'RW'],
-            ['number' => 11, 'name' => 'Ailier gauche fictif', 'position' => 'LW'],
-            ['number' => 9, 'name' => 'Buteur fictif', 'position' => 'ST'],
+            ['id' => $side . '-fictional-1', 'name' => 'Gardien fictif', 'shortName' => 'Gardien', 'number' => 1, 'position' => 'GK', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-2', 'name' => 'Défenseur droit fictif', 'shortName' => 'Def. droit', 'number' => 2, 'position' => 'RB', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-3', 'name' => 'Lateral gauche fictif', 'shortName' => 'Lat. gauche', 'number' => 3, 'position' => 'LB', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-4', 'name' => 'Defenseur central A', 'shortName' => 'Central A', 'number' => 4, 'position' => 'CB', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-5', 'name' => 'Defenseur central B', 'shortName' => 'Central B', 'number' => 5, 'position' => 'CB', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-6', 'name' => 'Milieu sentinelle', 'shortName' => 'Sentinelle', 'number' => 6, 'position' => 'CDM', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-7', 'name' => 'Ailier droit fictif', 'shortName' => 'Ailier D', 'number' => 7, 'position' => 'RW', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-8', 'name' => 'Milieu relayeur', 'shortName' => 'Relayeur', 'number' => 8, 'position' => 'CM', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-9', 'name' => 'Buteur fictif', 'shortName' => 'Buteur', 'number' => 9, 'position' => 'ST', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-10', 'name' => 'Milieu creatif', 'shortName' => 'Creatif', 'number' => 10, 'position' => 'CAM', 'side' => $side, 'photo' => null],
+            ['id' => $side . '-fictional-11', 'name' => 'Ailier gauche fictif', 'shortName' => 'Ailier G', 'number' => 11, 'position' => 'LW', 'side' => $side, 'photo' => null],
         ];
+    }
+
+    private function extractShortName(string $name): string
+    {
+        $parts = preg_split('/\s+/', trim($name)) ?: [];
+        if ($parts === []) {
+            return $name;
+        }
+
+        return (string) end($parts);
     }
 }
