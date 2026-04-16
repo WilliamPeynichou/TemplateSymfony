@@ -8,6 +8,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 
 #[IsGranted('ROLE_USER')]
 #[Route('/api/v1/agent')]
@@ -37,33 +39,49 @@ class AgentChatController extends ApiController
         ];
 
         $agentUrl = $_ENV['AGENT_URL'] ?? 'http://agent:8001';
+        try {
+            $response = $this->httpClient->request('POST', $agentUrl . '/chat', [
+                'json'         => $payload,
+                'timeout'      => 600,
+                'max_duration' => 600,
+                'headers'      => [
+                    'X-Coach-Id' => $this->getUser()->getId(),
+                    'X-Agent-Internal-Secret' => $this->agentInternalSecret,
+                ],
+            ]);
 
-        $response = $this->httpClient->request('POST', $agentUrl . '/chat', [
-            'json'         => $payload,
-            'timeout'      => 600,
-            'max_duration' => 600,
-            'headers'      => [
-                'X-Coach-Id' => $this->getUser()->getId(),
-                'X-Agent-Internal-Secret' => $this->agentInternalSecret,
-            ],
-        ]);
-
-        return new JsonResponse($response->toArray(false), $response->getStatusCode());
+            try {
+                $data = $response->toArray(false);
+                return new JsonResponse($data, $response->getStatusCode());
+            } catch (DecodingExceptionInterface) {
+                return $this->error("L'agent a renvoye une reponse non JSON.", 502);
+            }
+        } catch (TransportExceptionInterface) {
+            return $this->error("L'agent est indisponible ou injoignable.", 502);
+        }
     }
 
     #[Route('/conversations', name: 'api_agent_conversations', methods: ['GET'])]
     public function conversations(Request $request): JsonResponse
     {
         $agentUrl = $_ENV['AGENT_URL'] ?? 'http://agent:8001';
+        try {
+            $response = $this->httpClient->request('GET', $agentUrl . '/conversations', [
+                'headers' => [
+                    'X-Coach-Id' => $this->getUser()->getId(),
+                    'X-Agent-Internal-Secret' => $this->agentInternalSecret,
+                ],
+                'query'   => ['team_id' => $request->query->get('team_id')],
+            ]);
 
-        $response = $this->httpClient->request('GET', $agentUrl . '/conversations', [
-            'headers' => [
-                'X-Coach-Id' => $this->getUser()->getId(),
-                'X-Agent-Internal-Secret' => $this->agentInternalSecret,
-            ],
-            'query'   => ['team_id' => $request->query->get('team_id')],
-        ]);
-
-        return new JsonResponse($response->toArray(false), $response->getStatusCode());
+            try {
+                $data = $response->toArray(false);
+                return new JsonResponse($data, $response->getStatusCode());
+            } catch (DecodingExceptionInterface) {
+                return $this->error("L'agent a renvoye une reponse non JSON.", 502);
+            }
+        } catch (TransportExceptionInterface) {
+            return $this->error("L'agent est indisponible ou injoignable.", 502);
+        }
     }
 }

@@ -23,6 +23,23 @@ const modeLabel  = document.getElementById('agent-mode-label');
 const convBar    = document.getElementById('agent-conv-bar');
 const dot        = document.getElementById('agent-dot');
 
+async function parseApiResponse(response) {
+    const raw = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
+    if (isJson) {
+        try {
+            return JSON.parse(raw);
+        } catch {
+            throw new Error('Réponse JSON invalide du serveur.');
+        }
+    }
+
+    const preview = (raw || '').replace(/\s+/g, ' ').slice(0, 180);
+    throw new Error(`Réponse non JSON (${response.status}) : ${preview || 'vide'}`);
+}
+
 // ─── OUVERTURE / FERMETURE ───────────────────────────────────────────────────
 function openSidebar() {
     sidebar.classList.add('open');
@@ -52,7 +69,7 @@ async function loadConversations() {
     try {
         const params = teamId ? `?team_id=${teamId}` : '';
         const res    = await fetch(`/api/v1/agent/conversations${params}`, { credentials: 'include' });
-        const data   = await res.json();
+        const data   = await parseApiResponse(res);
         if (!data.success) return;
 
         renderConvBar(data.data || []);
@@ -95,7 +112,7 @@ async function loadConversation(convId) {
 
     try {
         const res  = await fetch(`/api/v1/conversations/${convId}/messages?limit=50`, { credentials: 'include' });
-        const data = await res.json();
+        const data = await parseApiResponse(res);
         if (!data.success) return;
 
         (data.data || []).forEach(msg => {
@@ -105,7 +122,7 @@ async function loadConversation(convId) {
         });
 
         const detailRes  = await fetch(`/api/v1/conversations/${convId}`, { credentials: 'include' });
-        const detailData = await detailRes.json();
+        const detailData = await parseApiResponse(detailRes);
         if (detailData.success && detailData.data?.pending_action) {
             pendingAction = detailData.data.pending_action;
             appendActionCard(detailData.data.pending_action);
@@ -139,7 +156,7 @@ async function sendMessage(text, confirmAction = null) {
             signal:       controller.signal,
         });
         clearTimeout(fetchTimeout);
-        const data = await res.json();
+        const data = await parseApiResponse(res);
 
         if (!data.success) {
             appendMessage('assistant', `⚠️ Erreur : ${data.error || 'inconnue'}`);
