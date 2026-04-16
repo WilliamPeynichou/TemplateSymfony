@@ -23,3 +23,7 @@ services:
     App\Service\FileUploadService:
         arguments:
             $uploadDir: '%upload_dir%'
+
+    App\Security\AgentTokenAuthenticator:
+        arguments:
+            $agentSecret: '%env(string:AGENT_SECRET)%'

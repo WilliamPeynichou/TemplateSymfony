@@ -1,0 +1,22 @@
+name: qwen3-1.7b
+backend: llama-cpp
+parameters:
+  model: huggingface://bartowski/Qwen3-1.7B-GGUF/Qwen3-1.7B-Q4_K_M.gguf
+context_size: 8192
+threads: 8
+f16: false
+mmap: true
+low_vram: true
+# Limite la longueur de génération pour éviter les timeouts CPU
+# Qwen3 en mode "no_think" génère directement sans chaîne de raisonnement
+roles:
+  user: "<|im_start|>user\n"
+  system: "<|im_start|>system\n"
+  assistant: "<|im_start|>assistant\n"
+template:
+  chat: |
+    {{- range .Messages}}
+    <|im_start|>{{.Role}}
+    {{.Content}}<|im_end|>
+    {{end}}<|im_start|>assistant
+    /no_think

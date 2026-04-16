@@ -32,6 +32,10 @@ return [
         'path' => './assets/match.js',
         'entrypoint' => true,
     ],
+    'agent-chat' => [
+        'path' => './assets/agent-chat.js',
+        'entrypoint' => true,
+    ],
     '@hotwired/stimulus' => [
         'version' => '3.2.2',
     ],

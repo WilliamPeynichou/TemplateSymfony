@@ -1,0 +1,19 @@
+name: qwen3-8b
+backend: llama-cpp
+parameters:
+  model: Qwen3-8B-Q4_K_M.gguf
+context_size: 4096
+threads: 8
+f16: false
+mmap: true
+low_vram: true
+roles:
+  user: "<|im_start|>user\n"
+  system: "<|im_start|>system\n"
+  assistant: "<|im_start|>assistant\n"
+template:
+  chat: |
+    {{- range .Messages}}
+    <|im_start|>{{.Role}}
+    {{.Content}}<|im_end|>
+    {{end}}<|im_start|>assistant

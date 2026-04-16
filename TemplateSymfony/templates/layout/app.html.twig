@@ -8,6 +8,7 @@
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
             {{ importmap('app') }}
+            {{ importmap('agent-chat') }}
         {% endblock %}
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
         {% if frankenphpHotReload %}
@@ -16,7 +17,8 @@
             <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
         {% endif %}
     </head>
-    <body>
+    {% set _teamId = app.request.attributes.get('teamId') ?? app.request.attributes.get('id') ?? '' %}
+    <body data-team-id="{{ _teamId }}" >
         <div class="app-shell">
             <aside class="sidebar">
                 <a href="{{ path('app_team_index') }}" class="sidebar__logo">And<span>field</span></a>
@@ -78,5 +80,6 @@
                 {% block content %}{% endblock %}
             </main>
         </div>
+        {% include '_partials/agent_sidebar.html.twig' %}
     </body>
 </html>
