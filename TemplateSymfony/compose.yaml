@@ -49,9 +49,10 @@ services:
         SERVER_PID=$$!
         echo 'Attente demarrage Ollama...'
         until curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; do sleep 1; done
-        echo 'Ollama pret - pull qwen3:1.7b si absent'
+        echo 'Ollama pret - pull qwen3:1.7b et nomic-embed-text'
         ollama pull qwen3:1.7b
-        echo 'Modele charge !'
+        ollama pull nomic-embed-text
+        echo 'Modeles charges !'
         wait $$SERVER_PID
     restart: unless-stopped
 
@@ -63,14 +64,30 @@ services:
       - SYMFONY_API_URL=http://php/api/v1
       - AGENT_SECRET=${AGENT_SECRET:?AGENT_SECRET is required}
       - AGENT_INTERNAL_SECRET=${AGENT_INTERNAL_SECRET:?AGENT_INTERNAL_SECRET is required}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_EMBEDDINGS_MODEL=nomic-embed-text
+      - EMBEDDINGS_BACKEND=${EMBEDDINGS_BACKEND:-ollama}
+      - RAG_DB_PATH=/app/var/rag.sqlite
+    volumes:
+      - agent_data:/app/var
     depends_on:
       - ollama
       - php
     restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
 volumes:
   database_data:
   caddy_data:
   caddy_config:
   ollama_data:
+  agent_data:
 ###< doctrine/doctrine-bundle ###

@@ -1,0 +1,26 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}{{ organization.name }}{% endblock %}
+{% block content %}
+    <h1>{{ organization.name }}</h1>
+    <p>Créée le {{ organization.createdAt|date('d/m/Y') }}</p>
+
+    <h2>Membres</h2>
+    <ul>
+        <li>{{ organization.owner.email }} (owner)</li>
+        {% for m in organization.memberships %}
+            {% if m.role != 'owner' %}
+                <li>{{ m.user.email }} — {{ m.role }}</li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+
+    {% if is_granted('ORG_OWNER', organization) %}
+        <h2>Inviter un membre</h2>
+        <form method="post" action="{{ path('app_organization_invite', {id: organization.id}) }}">
+            <label>Email
+                <input type="email" name="email" required>
+            </label>
+            <button type="submit">Envoyer l'invitation</button>
+        </form>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Calendrier — {{ team.name }}{% endblock %}
+{% block content %}
+    <h1>Calendrier — {{ team.name }}</h1>
+    <p>
+        <a class="btn" href="{{ path('app_training_new', {id: team.id}) }}">+ Nouvelle séance</a>
+        <a class="btn" href="{{ path('app_team_calendar_ics', {id: team.id}) }}">Exporter (ICS)</a>
+    </p>
+
+    <h2>Matchs</h2>
+    <ul>
+        {% for f in fixtures %}
+            <li>
+                {{ f.matchDate|date('d/m/Y') }} — vs {{ f.opponent }} ({{ f.venue }})
+                {% if f.status == 'played' %}
+                    — {{ f.scoreFor }}-{{ f.scoreAgainst }}
+                {% endif %}
+            </li>
+        {% else %}
+            <li>Aucun match planifié.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Entraînements</h2>
+    <ul>
+        {% for t in trainings %}
+            <li>
+                {{ t.startsAt|date('d/m/Y H:i') }} — {{ t.title }}
+                ({{ t.durationMinutes }} min)
+                {% if t.focus %}— {{ t.focus }}{% endif %}
+            </li>
+        {% else %}
+            <li>Aucune séance planifiée.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

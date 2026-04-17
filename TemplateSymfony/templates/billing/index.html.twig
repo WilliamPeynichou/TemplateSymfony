@@ -1,0 +1,40 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Abonnement{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">Mon abonnement</h1>
+
+    {% if currentSubscription %}
+        <section class="card">
+            <h2>Plan actuel</h2>
+            <p>
+                <strong>{{ currentSubscription.plan.name }}</strong>
+                — statut : <code>{{ currentSubscription.status }}</code>
+            </p>
+            {% if currentSubscription.currentPeriodEnd %}
+                <p>Renouvellement : {{ currentSubscription.currentPeriodEnd|date('d/m/Y') }}</p>
+            {% endif %}
+        </section>
+    {% else %}
+        <p>Vous êtes en plan gratuit.</p>
+    {% endif %}
+
+    <section style="margin-top:2rem;">
+        <h2>Changer de plan</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
+            {% for plan in availablePlans %}
+                <form method="post" action="{{ path('app_billing_checkout', {slug: plan.slug}) }}"
+                      style="border:1px solid #e5e5e5;padding:1.2rem;border-radius:10px;">
+                    <h3>{{ plan.name }}</h3>
+                    <p>{{ (plan.priceCents / 100)|number_format(2, ',', ' ') }} {{ plan.currency }} / {{ plan.billingInterval }}</p>
+                    <input type="hidden" name="_token" value="{{ csrf_token('billing_checkout_' ~ plan.slug) }}">
+                    <button type="submit"
+                            {% if currentSubscription and currentSubscription.plan.id == plan.id %}disabled{% endif %}>
+                        {% if currentSubscription and currentSubscription.plan.id == plan.id %}Plan actuel{% else %}Choisir{% endif %}
+                    </button>
+                </form>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

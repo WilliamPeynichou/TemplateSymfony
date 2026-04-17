@@ -12,6 +12,12 @@ security:
         dev:
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+        api_public:
+            pattern: ^/api/public
+            stateless: true
+            provider: app_user_provider
+            custom_authenticators:
+                - App\Security\ApiKeyAuthenticator
         main:
             lazy: true
             provider: app_user_provider
@@ -32,6 +38,13 @@ security:
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
+        - { path: ^/pricing, roles: PUBLIC_ACCESS }
+        - { path: ^/healthz, roles: PUBLIC_ACCESS }
+        - { path: ^/offline, roles: PUBLIC_ACCESS }
+        - { path: ^/billing/webhook, roles: PUBLIC_ACCESS }
+        - { path: ^/manifest\.webmanifest, roles: PUBLIC_ACCESS }
+        - { path: ^/sw\.js, roles: PUBLIC_ACCESS }
+        - { path: ^/api/public, roles: ROLE_USER }
         - { path: ^/, roles: ROLE_USER }
 
 when@test:

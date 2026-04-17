@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Rapport saison — {{ team.name }}</title>
+    <style>
+        body { font-family: DejaVu Sans, Arial, sans-serif; color: #111; }
+        h1 { border-bottom: 2px solid #111; padding-bottom: .3em; }
+        h2 { margin-top: 1.5em; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th { background: #f3f3f3; }
+        .small { color: #666; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <h1>Rapport saison — {{ team.name }}</h1>
+    <p class="small">Généré le {{ "now"|date("d/m/Y") }}</p>
+
+    <h2>Effectif</h2>
+    <table>
+        <thead>
+            <tr><th>Numéro</th><th>Joueur</th><th>Poste</th></tr>
+        </thead>
+        <tbody>
+            {% for p in roster %}
+                <tr>
+                    <td>{{ p.jerseyNumber }}</td>
+                    <td>{{ p.firstName }} {{ p.lastName }}</td>
+                    <td>{{ p.position }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Statistiques joueurs</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Joueur</th><th>Matchs</th><th>Minutes</th>
+                <th>Buts</th><th>Passes D.</th>
+                <th>Jaunes</th><th>Rouges</th><th>Note moy.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in stats %}
+                <tr>
+                    <td>{{ row.player.firstName }} {{ row.player.lastName }}</td>
+                    <td>{{ row.agg.matches }}</td>
+                    <td>{{ row.agg.minutes }}</td>
+                    <td>{{ row.agg.goals }}</td>
+                    <td>{{ row.agg.assists }}</td>
+                    <td>{{ row.agg.yellow }}</td>
+                    <td>{{ row.agg.red }}</td>
+                    <td>{{ row.agg.avgRating ?? '—' }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Matchs</h2>
+    <table>
+        <thead>
+            <tr><th>Date</th><th>Adversaire</th><th>Lieu</th><th>Statut</th><th>Score</th></tr>
+        </thead>
+        <tbody>
+            {% for f in fixtures %}
+                <tr>
+                    <td>{{ f.matchDate|date('d/m/Y') }}</td>
+                    <td>{{ f.opponent }}</td>
+                    <td>{{ f.venue }}</td>
+                    <td>{{ f.status }}</td>
+                    <td>
+                        {% if f.status == 'played' %}
+                            {{ f.scoreFor }} - {{ f.scoreAgainst }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

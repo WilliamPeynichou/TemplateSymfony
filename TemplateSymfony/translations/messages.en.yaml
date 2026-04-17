@@ -1,0 +1,26 @@
+app:
+    name: Andfield
+    tagline: "The AI assistant for football coaches"
+
+nav:
+    teams: My teams
+    prepare_match: Prepare a match
+    composition: Lineup
+    plans: Plans
+    roster: Roster
+    calendar: Calendar
+    billing: Subscription
+    logout: Sign out
+
+pricing:
+    title: Pricing
+    subtitle: "Choose the plan that fits your club"
+    cta: Get started
+
+common:
+    save: Save
+    cancel: Cancel
+    delete: Delete
+    edit: Edit
+    confirm: Confirm
+    loading: Loading...

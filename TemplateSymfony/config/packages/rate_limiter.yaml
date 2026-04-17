@@ -1,0 +1,19 @@
+framework:
+    rate_limiter:
+        # Limiteur pour le login et le register (anti brute-force, basé sur l'IP)
+        anonymous_auth:
+            policy: 'token_bucket'
+            limit: 5
+            rate: { interval: '1 minute', amount: 5 }
+
+        # Limiteur pour les endpoints agent chat (coûteux côté LLM)
+        agent_chat:
+            policy: 'fixed_window'
+            limit: 30
+            interval: '1 minute'
+
+        # Limiteur générique pour les API d'écriture
+        api_write:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '1 minute'

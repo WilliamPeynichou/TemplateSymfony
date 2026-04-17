@@ -2,14 +2,15 @@
 
 namespace App\Controller\Api;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[IsGranted('ROLE_USER')]
 #[Route('/api/v1/agent')]
@@ -19,11 +20,20 @@ class AgentChatController extends ApiController
         private readonly HttpClientInterface $httpClient,
         #[Autowire('%env(string:AGENT_INTERNAL_SECRET)%')]
         private readonly string $agentInternalSecret,
+        #[Autowire(service: 'limiter.agent_chat')]
+        private readonly ?RateLimiterFactory $agentChatLimiter = null,
     ) {}
 
     #[Route('/chat', name: 'api_agent_chat', methods: ['POST'])]
     public function chat(Request $request): JsonResponse
     {
+        if (null !== $this->agentChatLimiter) {
+            $limiter = $this->agentChatLimiter->create((string) $this->getUser()?->getUserIdentifier());
+            if (!$limiter->consume()->isAccepted()) {
+                return $this->error('Trop de requêtes vers l\'agent, réessayez dans 1 minute.', 429);
+            }
+        }
+
         $data = json_decode($request->getContent(), true);
 
         if (empty($data['message'])) {

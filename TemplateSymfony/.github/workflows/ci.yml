@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP — PHPUnit + PHPStan + PHP-CS-Fixer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: ctype, iconv, intl, mbstring, pdo_mysql
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+        working-directory: TemplateSymfony
+
+      - name: PHP-CS-Fixer (dry-run)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.dist.php
+        working-directory: TemplateSymfony
+        continue-on-error: true
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+        working-directory: TemplateSymfony
+        continue-on-error: true
+
+      - name: PHPUnit
+        run: vendor/bin/phpunit --colors=never
+        working-directory: TemplateSymfony
+        env:
+          APP_ENV: test
+          AGENT_SECRET: ci-agent-secret
+          AGENT_INTERNAL_SECRET: ci-internal-secret
+
+  python:
+    name: Python — Pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: TemplateSymfony/agent/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r TemplateSymfony/agent/requirements.txt
+
+      - name: Pytest
+        run: pytest -q
+        working-directory: TemplateSymfony/agent
+        env:
+          AGENT_SECRET: ci-agent-secret
+          AGENT_INTERNAL_SECRET: ci-internal-secret
+          SYMFONY_API_URL: http://php/api/v1
+          LLM_BASE_URL: http://ollama:11434/v1
+          LLM_MODEL: qwen3:1.7b
+
+  js:
+    name: JS — node:test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run frontend tests
+        run: node --test assets/tests
+        working-directory: TemplateSymfony

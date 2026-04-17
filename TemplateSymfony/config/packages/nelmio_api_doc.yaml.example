@@ -1,0 +1,26 @@
+# À renommer en nelmio_api_doc.yaml APRÈS avoir lancé :
+#   composer require nelmio/api-doc-bundle
+#
+# Sinon Symfony lève une exception "There is no extension able to load the configuration
+# for 'nelmio_api_doc'".
+
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Andfield API publique
+            description: |
+                API publique des coachs (équipes, joueurs, matchs).
+                Authentification : header `X-Api-Key`.
+            version: 1.0.0
+        components:
+            securitySchemes:
+                ApiKey:
+                    type: apiKey
+                    in: header
+                    name: X-Api-Key
+        security:
+            - ApiKey: []
+    areas:
+        public:
+            path_patterns:
+                - ^/api/public

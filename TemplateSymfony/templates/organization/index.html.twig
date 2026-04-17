@@ -1,0 +1,18 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Organisations{% endblock %}
+{% block content %}
+    <h1>Mes organisations</h1>
+    <a href="{{ path('app_organization_new') }}">+ Nouvelle organisation</a>
+    <ul>
+        {% for org in organizations %}
+            <li>
+                <a href="{{ path('app_organization_show', {id: org.id}) }}">
+                    {{ org.name }}
+                </a>
+                {% if org.owner.id == app.user.id %}<em>(owner)</em>{% endif %}
+            </li>
+        {% else %}
+            <li>Aucune organisation. Créez la première.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

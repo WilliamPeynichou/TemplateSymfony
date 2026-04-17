@@ -1,6 +1,7 @@
 import httpx
 from langchain_core.tools import tool
 from app.config import SYMFONY_API_URL, AGENT_SECRET
+from app.rag import search_notes as rag_search_notes
 
 
 def _headers(coach_id: int) -> dict:
@@ -348,12 +349,187 @@ def analyze_player(coach_id: int, team_id: int, player_id: int) -> dict:
     }
 
 
+# ─── MATCHS (FIXTURES) ──────────────────────────────────────────────────────
+
+@tool
+def list_fixtures(coach_id: int, team_id: int) -> dict:
+    """
+    Liste tous les matchs (à venir ou joués) d'une équipe, du plus récent au plus ancien.
+    Utile pour savoir quels adversaires ont déjà été rencontrés.
+    """
+    return _get(f"/teams/{team_id}/fixtures", coach_id)
+
+
+@tool
+def get_fixture(coach_id: int, team_id: int, fixture_id: int) -> dict:
+    """Récupère les détails d'un match (score, adversaire, notes)."""
+    return _get(f"/teams/{team_id}/fixtures/{fixture_id}", coach_id)
+
+
+@tool
+def create_fixture(
+    coach_id: int,
+    team_id: int,
+    opponent: str,
+    matchDate: str,
+    venue: str = "home",
+    competition: str | None = None,
+    scoreFor: int | None = None,
+    scoreAgainst: int | None = None,
+    status: str = "scheduled",
+    notes: str | None = None,
+) -> dict:
+    """
+    Crée un match.
+    matchDate : format ISO 8601 (ex: 2026-04-20T15:00:00).
+    venue     : 'home' ou 'away'.
+    status    : 'scheduled', 'played' ou 'cancelled'.
+    Fournis scoreFor/scoreAgainst uniquement si status='played'.
+    """
+    payload = {
+        "opponent": opponent,
+        "matchDate": matchDate,
+        "venue": venue,
+        "status": status,
+    }
+    if competition is not None:
+        payload["competition"] = competition
+    if scoreFor is not None:
+        payload["scoreFor"] = scoreFor
+    if scoreAgainst is not None:
+        payload["scoreAgainst"] = scoreAgainst
+    if notes is not None:
+        payload["notes"] = notes
+    return _post(f"/teams/{team_id}/fixtures", payload, coach_id)
+
+
+@tool
+def update_fixture(
+    coach_id: int,
+    team_id: int,
+    fixture_id: int,
+    opponent: str | None = None,
+    matchDate: str | None = None,
+    venue: str | None = None,
+    competition: str | None = None,
+    scoreFor: int | None = None,
+    scoreAgainst: int | None = None,
+    status: str | None = None,
+    notes: str | None = None,
+) -> dict:
+    """Met à jour un match (ex: renseigner le score après la rencontre)."""
+    payload = {k: v for k, v in {
+        "opponent": opponent, "matchDate": matchDate, "venue": venue,
+        "competition": competition, "scoreFor": scoreFor, "scoreAgainst": scoreAgainst,
+        "status": status, "notes": notes,
+    }.items() if v is not None}
+    return _patch(f"/teams/{team_id}/fixtures/{fixture_id}", payload, coach_id)
+
+
+@tool
+def delete_fixture(coach_id: int, team_id: int, fixture_id: int) -> dict:
+    """Supprime un match."""
+    return _delete(f"/teams/{team_id}/fixtures/{fixture_id}", coach_id)
+
+
+@tool
+def fixture_report(coach_id: int, team_id: int) -> dict:
+    """
+    Synthèse des matchs d'une équipe : bilan V/N/D sur les matchs joués,
+    prochains matchs programmés, buts marqués/encaissés.
+    """
+    fixtures_resp = _get(f"/teams/{team_id}/fixtures", coach_id)
+    fixtures = fixtures_resp.get("data", [])
+
+    played = [f for f in fixtures if f.get("status") == "played"]
+    upcoming = [f for f in fixtures if f.get("status") == "scheduled"]
+
+    wins = sum(1 for f in played if f.get("result") == "win")
+    draws = sum(1 for f in played if f.get("result") == "draw")
+    losses = sum(1 for f in played if f.get("result") == "loss")
+
+    goals_for = sum((f.get("scoreFor") or 0) for f in played)
+    goals_against = sum((f.get("scoreAgainst") or 0) for f in played)
+
+    return {
+        "success": True,
+        "data": {
+            "played_count": len(played),
+            "upcoming_count": len(upcoming),
+            "wins": wins,
+            "draws": draws,
+            "losses": losses,
+            "goals_for": goals_for,
+            "goals_against": goals_against,
+            "goal_diff": goals_for - goals_against,
+            "last_5_played": played[:5],
+            "next_3_upcoming": upcoming[:3] if upcoming else [],
+            "instruction": (
+                "Rédige un bilan synthétique : forme actuelle, tendance "
+                "(victoires consécutives, série négative), points forts offensifs/défensifs "
+                "et un conseil pour le prochain match."
+            ),
+        },
+        "error": None,
+    }
+
+
+# ─── RAG — RECHERCHE SÉMANTIQUE DES NOTES ───────────────────────────────────
+
+@tool
+def search_notes_semantic(
+    coach_id: int,
+    query: str,
+    team_id: int | None = None,
+    limit: int = 5,
+) -> dict:
+    """
+    Recherche dans les notes de match du coach par similarité sémantique.
+    Retourne les extraits les plus proches de la requête en langage naturel.
+
+    Exemples d'usage :
+    - "joueurs qui ont manqué d'intensité en seconde mi-temps"
+    - "matchs où la défense a été dépassée"
+    - "Lucas erreurs de placement"
+
+    Plus pertinent que `get_match_notes` quand la question est abstraite.
+    """
+    try:
+        hits = rag_search_notes(coach_id=coach_id, query=query, team_id=team_id, limit=limit)
+    except Exception as e:
+        return {"success": False, "data": None, "error": f"RAG search failed: {e}"}
+
+    return {
+        "success": True,
+        "data": {
+            "query": query,
+            "results": [
+                {
+                    "score": round(h.score, 4),
+                    "source_type": h.source_type,
+                    "source_id": h.source_id,
+                    "team_id": h.team_id,
+                    "matchLabel": h.metadata.get("matchLabel"),
+                    "matchDate": h.metadata.get("matchDate"),
+                    "extract": h.content[:600],
+                }
+                for h in hits
+            ],
+            "count": len(hits),
+        },
+        "error": None,
+    }
+
+
 ALL_TOOLS = [
     list_teams, get_team, create_team, update_team, delete_team,
     list_players, get_player, create_player, update_player, delete_player,
     get_match_notes, create_match_note,
+    list_fixtures, get_fixture, create_fixture, update_fixture, delete_fixture,
+    fixture_report,
     get_team_analysis,
     suggest_composition,
     coaching_report,
     analyze_player,
+    search_notes_semantic,
 ]

@@ -1,0 +1,26 @@
+app:
+    name: Andfield
+    tagline: "L'assistant IA pour coachs"
+
+nav:
+    teams: Mes équipes
+    prepare_match: Préparer un match
+    composition: Composition
+    plans: Plans
+    roster: Effectif
+    calendar: Calendrier
+    billing: Abonnement
+    logout: Déconnexion
+
+pricing:
+    title: Tarifs
+    subtitle: "Choisissez le plan adapté à votre club"
+    cta: Commencer
+
+common:
+    save: Enregistrer
+    cancel: Annuler
+    delete: Supprimer
+    edit: Modifier
+    confirm: Confirmer
+    loading: Chargement...

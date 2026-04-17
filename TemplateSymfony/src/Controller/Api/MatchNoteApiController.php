@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 use App\Entity\MatchNote;
 use App\Entity\Team;
 use App\Repository\MatchNoteRepository;
+use App\Service\AgentRagIndexer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,7 +43,7 @@ class MatchNoteApiController extends ApiController
     }
 
     #[Route('', name: 'api_match_note_create', methods: ['POST'])]
-    public function create(int $teamId, Request $request, EntityManagerInterface $em): JsonResponse
+    public function create(int $teamId, Request $request, EntityManagerInterface $em, AgentRagIndexer $rag): JsonResponse
     {
         $team = $em->find(Team::class, $teamId);
         if (!$team) {
@@ -67,11 +68,13 @@ class MatchNoteApiController extends ApiController
         $em->persist($note);
         $em->flush();
 
+        $rag->indexMatchNote($note);
+
         return $this->ok($this->serialize($note));
     }
 
     #[Route('/{id}', name: 'api_match_note_update', methods: ['PATCH'])]
-    public function update(int $teamId, MatchNote $note, Request $request, EntityManagerInterface $em): JsonResponse
+    public function update(int $teamId, MatchNote $note, Request $request, EntityManagerInterface $em, AgentRagIndexer $rag): JsonResponse
     {
         $team = $em->find(Team::class, $teamId);
         if (!$team) {
@@ -88,11 +91,12 @@ class MatchNoteApiController extends ApiController
         if (isset($data['matchDate']))  $note->setMatchDate(new \DateTimeImmutable($data['matchDate']));
 
         $em->flush();
+        $rag->indexMatchNote($note);
         return $this->ok($this->serialize($note));
     }
 
     #[Route('/{id}', name: 'api_match_note_delete', methods: ['DELETE'])]
-    public function delete(int $teamId, MatchNote $note, EntityManagerInterface $em): JsonResponse
+    public function delete(int $teamId, MatchNote $note, EntityManagerInterface $em, AgentRagIndexer $rag): JsonResponse
     {
         $team = $em->find(Team::class, $teamId);
         if (!$team) {
@@ -103,8 +107,13 @@ class MatchNoteApiController extends ApiController
             throw $this->createAccessDeniedException('Note non autorisee pour cette equipe.');
         }
 
+        $noteId = (int) $note->getId();
+        $coachId = (int) $note->getCoach()?->getId();
         $em->remove($note);
         $em->flush();
+        if ($coachId > 0 && $noteId > 0) {
+            $rag->deleteMatchNote($coachId, $noteId);
+        }
         return $this->ok(['deleted' => true]);
     }
 

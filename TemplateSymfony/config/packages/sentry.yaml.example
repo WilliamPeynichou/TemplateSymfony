@@ -1,0 +1,14 @@
+# À activer APRÈS :
+#   composer require sentry/sentry-symfony
+#
+# puis renommer ce fichier en sentry.yaml.
+
+sentry:
+    dsn: '%env(default::SENTRY_DSN)%'
+    register_error_listener: true
+    tracing:
+        enabled: true
+    options:
+        environment: '%kernel.environment%'
+        release: '%env(default::APP_RELEASE)%'
+        traces_sample_rate: 0.1
