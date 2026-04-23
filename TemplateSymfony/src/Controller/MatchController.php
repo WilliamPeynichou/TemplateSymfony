@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\Player;
 use App\Entity\Team;
 use App\Entity\User;
+use App\Repository\AttendanceRepository;
+use App\Repository\PlayerMatchStatRepository;
 use App\Repository\TeamRepository;
 use App\Service\BaseTeamImporter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,7 +20,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class MatchController extends AbstractController
 {
     #[Route('/prepare', name: 'app_match_prepare', methods: ['GET', 'POST'])]
-    public function prepare(Request $request, TeamRepository $teamRepository, BaseTeamImporter $baseTeamImporter): Response
+    public function prepare(
+        Request $request,
+        TeamRepository $teamRepository,
+        BaseTeamImporter $baseTeamImporter,
+        AttendanceRepository $attendanceRepository,
+        PlayerMatchStatRepository $playerMatchStatRepository,
+    ): Response
     {
         /** @var User $coach */
         $coach = $this->getUser();
@@ -31,17 +39,25 @@ class MatchController extends AbstractController
         $scenario = (string) ($request->isMethod('POST')
             ? $request->request->get('scenario', 'base')
             : $request->query->get('scenario', 'base'));
+        $selectedCustomTeamId = (int) ($request->isMethod('POST')
+            ? $request->request->get('created_team', 0)
+            : $request->query->get('created_team', 0));
+        $selectedCustomTeam = $this->findSelectedTeam($customTeams, $selectedCustomTeamId);
+        $matchContext = $this->buildMatchContext($request);
+        $selectedTeamPreview = $selectedCustomTeam instanceof Team
+            ? $this->buildTeamPreparationInsights($selectedCustomTeam, $attendanceRepository, $playerMatchStatRepository)
+            : null;
 
         if ($request->isMethod('POST')) {
             if ($scenario === 'custom_vs_fictional') {
-                $selectedTeam = $this->findSelectedTeam($customTeams, (int) $request->request->get('created_team'));
-
-                if (!$selectedTeam) {
+                if (!$selectedCustomTeam) {
                     $this->addFlash('error', 'Sélectionnez une équipe créée pour préparer ce match.');
                 } else {
                     $request->getSession()->set('match_preparation', [
                         'scenario' => $scenario,
-                        'home' => $this->buildRealTeamData($selectedTeam, 'home', 'Mon équipe'),
+                        'context' => $matchContext,
+                        'homeInsights' => $selectedTeamPreview,
+                        'home' => $this->buildRealTeamData($selectedCustomTeam, 'home', 'Mon équipe', $attendanceRepository, $playerMatchStatRepository),
                         'away' => $this->buildFictionalTeamData(
                             'away',
                             trim((string) $request->request->get('fictional_name', 'Équipe fictive')),
@@ -63,8 +79,11 @@ class MatchController extends AbstractController
                 } else {
                     $request->getSession()->set('match_preparation', [
                         'scenario' => 'base',
-                        'home' => $this->buildRealTeamData($baseTeams[$homeKey], 'home', 'Équipe de base'),
-                        'away' => $this->buildRealTeamData($baseTeams[$awayKey], 'away', 'Équipe de base'),
+                        'context' => $matchContext,
+                        'homeInsights' => $this->buildTeamPreparationInsights($baseTeams[$homeKey], $attendanceRepository, $playerMatchStatRepository),
+                        'awayInsights' => $this->buildTeamPreparationInsights($baseTeams[$awayKey], $attendanceRepository, $playerMatchStatRepository),
+                        'home' => $this->buildRealTeamData($baseTeams[$homeKey], 'home', 'Équipe de base', $attendanceRepository, $playerMatchStatRepository),
+                        'away' => $this->buildRealTeamData($baseTeams[$awayKey], 'away', 'Équipe de base', $attendanceRepository, $playerMatchStatRepository),
                     ]);
 
                     return $this->redirectToRoute('app_match_board');
@@ -75,6 +94,9 @@ class MatchController extends AbstractController
         return $this->render('match/prepare.html.twig', [
             'scenario' => $scenario,
             'customTeams' => $customTeams,
+            'selectedCustomTeam' => $selectedCustomTeam,
+            'selectedTeamPreview' => $selectedTeamPreview,
+            'matchContext' => $matchContext,
         ]);
     }
 
@@ -89,6 +111,9 @@ class MatchController extends AbstractController
 
         return $this->render('match/board.html.twig', [
             'match' => $preparation,
+            'context' => $preparation['context'] ?? null,
+            'homeInsights' => $preparation['homeInsights'] ?? null,
+            'awayInsights' => $preparation['awayInsights'] ?? null,
         ]);
     }
 
@@ -112,13 +137,25 @@ class MatchController extends AbstractController
      *   label: string,
      *   side: string,
      *   type: string,
-     *   players: list<array{id: string, name: string, shortName: string, number: int, position: string, side: string, photo: ?string}>
+     *   players: list<array{id: string, name: string, shortName: string, number: int, position: string, side: string, photo: ?string, status: string, statusReason: ?string, minutes: int, avgRating: ?float, attendanceRate: int}>
      * }
      */
-    private function buildRealTeamData(Team $team, string $side, string $label): array
+    private function buildRealTeamData(
+        Team $team,
+        string $side,
+        string $label,
+        AttendanceRepository $attendanceRepository,
+        PlayerMatchStatRepository $playerMatchStatRepository,
+    ): array
     {
         $players = $team->getPlayers()->toArray();
-        usort($players, fn (Player $left, Player $right) => $left->getNumber() <=> $right->getNumber());
+        $attendanceSummary = $attendanceRepository->getSummaryByPlayerForTeam($team);
+        usort($players, function (Player $left, Player $right) use ($attendanceSummary): int {
+            $leftUnavailable = $left->getStatus() !== Player::STATUS_PRESENT ? 1 : 0;
+            $rightUnavailable = $right->getStatus() !== Player::STATUS_PRESENT ? 1 : 0;
+
+            return [$leftUnavailable, $left->getNumber()] <=> [$rightUnavailable, $right->getNumber()];
+        });
 
         return [
             'name' => (string) $team->getName(),
@@ -134,6 +171,11 @@ class MatchController extends AbstractController
                     'position' => (string) $player->getPosition(),
                     'side' => $side,
                     'photo' => $player->getPhoto(),
+                    'status' => $player->getStatus(),
+                    'statusReason' => $player->getStatusReason(),
+                    'minutes' => $playerMatchStatRepository->aggregateForPlayer($player)['minutes'],
+                    'avgRating' => $playerMatchStatRepository->aggregateForPlayer($player)['avgRating'],
+                    'attendanceRate' => $attendanceSummary[$player->getId()]['rate'] ?? 0,
                 ],
                 $players
             ),
@@ -235,5 +277,101 @@ class MatchController extends AbstractController
         }
 
         return (string) end($parts);
+    }
+
+    private function buildMatchContext(Request $request): array
+    {
+        return [
+            'opponentLabel' => trim((string) $request->request->get('opponent_label', $request->query->get('opponent_label', ''))),
+            'competition' => trim((string) $request->request->get('competition', $request->query->get('competition', ''))),
+            'kickoff' => trim((string) $request->request->get('kickoff', $request->query->get('kickoff', ''))),
+            'venue' => trim((string) $request->request->get('venue', $request->query->get('venue', 'home'))),
+            'objective' => trim((string) $request->request->get('objective', $request->query->get('objective', ''))),
+            'shape' => trim((string) $request->request->get('shape', $request->query->get('shape', '4-3-3'))),
+            'pressingPlan' => trim((string) $request->request->get('pressing_plan', $request->query->get('pressing_plan', ''))),
+            'inPossessionPlan' => trim((string) $request->request->get('in_possession_plan', $request->query->get('in_possession_plan', ''))),
+            'transitionPlan' => trim((string) $request->request->get('transition_plan', $request->query->get('transition_plan', ''))),
+            'setPiecesPlan' => trim((string) $request->request->get('set_pieces_plan', $request->query->get('set_pieces_plan', ''))),
+            'watchouts' => trim((string) $request->request->get('watchouts', $request->query->get('watchouts', ''))),
+        ];
+    }
+
+    private function buildTeamPreparationInsights(
+        Team $team,
+        AttendanceRepository $attendanceRepository,
+        PlayerMatchStatRepository $playerMatchStatRepository,
+    ): array {
+        $attendanceSummary = $attendanceRepository->getSummaryByPlayerForTeam($team);
+        $players = $team->getPlayers()->toArray();
+        $available = [];
+        $unavailable = [];
+        $topPerformers = [];
+        $positionCounts = ['GK' => 0, 'DEF' => 0, 'MID' => 0, 'ATT' => 0];
+
+        foreach ($players as $player) {
+            \assert($player instanceof Player);
+            $stats = $playerMatchStatRepository->aggregateForPlayer($player);
+            $attendanceRate = $attendanceSummary[$player->getId()]['rate'] ?? 0;
+            $playerData = [
+                'name' => $player->getFullName(),
+                'number' => $player->getNumber(),
+                'position' => $player->getPosition(),
+                'status' => $player->getStatusLabel(),
+                'statusRaw' => $player->getStatus(),
+                'statusReason' => $player->getStatusReason(),
+                'minutes' => $stats['minutes'],
+                'avgRating' => $stats['avgRating'],
+                'goals' => $stats['goals'],
+                'attendanceRate' => $attendanceRate,
+            ];
+
+            $bucket = match (true) {
+                $player->getPosition() === 'GK' => 'GK',
+                \in_array($player->getPosition(), ['CB', 'LB', 'RB'], true) => 'DEF',
+                \in_array($player->getPosition(), ['CDM', 'CM', 'CAM'], true) => 'MID',
+                default => 'ATT',
+            };
+            ++$positionCounts[$bucket];
+
+            if ($player->getStatus() === Player::STATUS_PRESENT) {
+                $available[] = $playerData;
+            } else {
+                $unavailable[] = $playerData;
+            }
+
+            $score = ($stats['minutes'] ?? 0) + (($stats['avgRating'] ?? 0.0) * 100) + ($attendanceRate * 10) + (($stats['goals'] ?? 0) * 30);
+            $topPerformers[] = ['score' => $score, 'player' => $playerData];
+        }
+
+        usort($available, fn (array $left, array $right) => [$left['number']] <=> [$right['number']]);
+        usort($unavailable, fn (array $left, array $right) => [$left['number']] <=> [$right['number']]);
+        usort($topPerformers, fn (array $left, array $right) => [$right['score'], $left['player']['number']] <=> [$left['score'], $right['player']['number']]);
+
+        return [
+            'teamName' => $team->getName(),
+            'counts' => [
+                'players' => \count($players),
+                'available' => \count($available),
+                'unavailable' => \count($unavailable),
+            ],
+            'positionCounts' => $positionCounts,
+            'recommendedShape' => $this->guessRecommendedShape($positionCounts),
+            'available' => $available,
+            'unavailable' => array_slice($unavailable, 0, 8),
+            'topPerformers' => array_map(static fn (array $entry) => $entry['player'], array_slice($topPerformers, 0, 5)),
+        ];
+    }
+
+    private function guessRecommendedShape(array $positionCounts): string
+    {
+        if (($positionCounts['DEF'] ?? 0) >= 7 && ($positionCounts['ATT'] ?? 0) >= 4) {
+            return '3-4-3';
+        }
+
+        if (($positionCounts['MID'] ?? 0) >= 6) {
+            return '4-2-3-1';
+        }
+
+        return '4-3-3';
     }
 }

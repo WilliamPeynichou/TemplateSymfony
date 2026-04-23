@@ -1,0 +1,136 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Synthèse présences — {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Synthèse <em>présences</em></h1>
+        <p class="tactical-page-header__sub">{{ team.name }}</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+        <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Calendrier</a>
+        <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">Effectif</a>
+    </div>
+</div>
+
+<div class="tactical-page-body" style="display:grid;gap:var(--space-md);">
+    <div class="tactical-form-card">
+        <form method="get" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:end;">
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="from">Du</label>
+                <input id="from" type="date" name="from" value="{{ filters.from }}" class="tactical-input">
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="to">Au</label>
+                <input id="to" type="date" name="to" value="{{ filters.to }}" class="tactical-input">
+            </div>
+            <div class="tactical-form-actions" style="margin:0;">
+                <button type="submit" class="tactical-btn tactical-btn--primary">Filtrer</button>
+                <a href="{{ path('app_team_attendance_summary', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-md);">
+        <div class="tactical-card">
+            <div class="tactical-badge tactical-badge--lime">{{ totals.rate }}%</div>
+            <p class="tactical-card__sub" style="margin-top:0.75rem;">Taux global</p>
+        </div>
+        <div class="tactical-card">
+            <div class="tactical-badge">{{ totals.total }}</div>
+            <p class="tactical-card__sub" style="margin-top:0.75rem;">Pointages</p>
+        </div>
+        <div class="tactical-card">
+            <div class="tactical-badge">{{ totals.absent }}</div>
+            <p class="tactical-card__sub" style="margin-top:0.75rem;">Absences</p>
+        </div>
+        <div class="tactical-card">
+            <div class="tactical-badge">{{ totals.excused }}</div>
+            <p class="tactical-card__sub" style="margin-top:0.75rem;">Justifiées</p>
+        </div>
+    </div>
+
+    <div class="tactical-card">
+        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Par joueur</div>
+        <div class="tactical-table-wrap">
+            <table class="tactical-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Joueur</th>
+                        <th>Présence</th>
+                        <th>Absences</th>
+                        <th>Justifiées</th>
+                        <th>Retards</th>
+                        <th>Taux</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in players %}
+                        {% set row = summary[player.id] ?? null %}
+                        <tr>
+                            <td><span class="tactical-badge tactical-badge--primary">{{ player.number }}</span></td>
+                            <td>
+                                <strong style="font-weight:600;">{{ player.fullName }}</strong>
+                                <div style="color:var(--on-surface-variant);font-size:var(--text-label-sm);">{{ player.position }}</div>
+                            </td>
+                            <td>{{ row ? row.present ~ '/' ~ row.total : '—' }}</td>
+                            <td>{{ row ? row.absent : '—' }}</td>
+                            <td>{{ row ? row.excused : '—' }}</td>
+                            <td>{{ row ? row.late : '—' }}</td>
+                            <td>
+                                {% if row %}
+                                    <span class="tactical-badge {{ row.rate >= 80 ? 'tactical-badge--lime' : '' }}">{{ row.rate }}%</span>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tactical-card">
+        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Derniers pointages</div>
+        {% if recentAttendances is empty %}
+            <p class="tactical-card__sub">Aucune présence saisie sur cette période.</p>
+        {% else %}
+            <div class="tactical-table-wrap">
+                <table class="tactical-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Joueur</th>
+                            <th>Événement</th>
+                            <th>Statut</th>
+                            <th>Motif</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attendance in recentAttendances %}
+                            {% set fixture = attendance.fixture %}
+                            {% set training = attendance.trainingSession %}
+                            {% set eventDate = fixture ? fixture.matchDate : training.startsAt %}
+                            <tr>
+                                <td>{{ eventDate|date('d/m/Y H:i') }}</td>
+                                <td>{{ attendance.player.fullName }}</td>
+                                <td>
+                                    {% if fixture %}
+                                        Match vs {{ fixture.opponent }}
+                                    {% else %}
+                                        {{ training.title }}
+                                    {% endif %}
+                                </td>
+                                <td><span class="tactical-badge {{ attendance.status == 'present' ? 'tactical-badge--lime' : '' }}">{{ attendance.statusLabel }}</span></td>
+                                <td>{{ attendance.reason ?: '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

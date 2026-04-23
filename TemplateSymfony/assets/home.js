@@ -1,7 +1,10 @@
+import './styles/app.css';
+import './styles/home.css';
+
 // Nav — effet au scroll
-const nav = document.getElementById('nav');
+const nav = document.getElementById('tactical-nav');
 window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 50);
+    nav.classList.toggle('tactical-scrolled', window.scrollY > 50);
 }, { passive: true });
 
 // Reveal au scroll — IntersectionObserver

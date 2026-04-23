@@ -3,10 +3,10 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="theme-color" content="#101415">
         <title>{% block title %}Andfield{% endblock %} — Andfield</title>
-        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><rect width=%22128%22 height=%22128%22 rx=%2228%22 fill=%22%236b7c5c%22/><text x=%2264%22 y=%2296%22 text-anchor=%22middle%22 font-family=%22Georgia,serif%22 font-size=%2296%22 font-style=%22italic%22 fill=%22%23faf9f5%22>A</text></svg>">
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><rect width=%22128%22 height=%22128%22 rx=%2228%22 fill=%22%23101415%22/><text x=%2264%22 y=%2296%22 text-anchor=%22middle%22 font-family=%22Lexend,Georgia,serif%22 font-size=%2296%22 font-style=%22italic%22 font-weight=%22800%22 fill=%22%23c7f300%22>A</text></svg>">
         <link rel="manifest" href="/manifest.webmanifest">
-        <meta name="theme-color" content="#0a0a0a">
         <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
@@ -27,60 +27,70 @@
         {% endif %}
     </head>
     {% set _teamId = app.request.attributes.get('teamId') ?? app.request.attributes.get('id') ?? '' %}
-    <body data-team-id="{{ _teamId }}" >
-        <div class="app-shell">
-            <aside class="sidebar">
-                <a href="{{ path('app_home') }}" class="sidebar__logo" title="Retour à l'accueil">And<span>field</span></a>
-                <nav class="sidebar__nav">
-                    <span class="sidebar__section-label">Navigation</span>
+    <body data-team-id="{{ _teamId }}">
+        <div class="tactical-shell">
+            <aside class="tactical-sidebar">
+                <a href="{{ path('app_home') }}" class="tactical-sidebar__logo" title="Retour à l'accueil">And<span>field</span></a>
+                <nav class="tactical-sidebar__nav">
+                    <span class="tactical-sidebar__section-label">Navigation</span>
                     <a href="{{ path('app_team_index') }}"
-                       class="sidebar__link {% if app.request.attributes.get('_route') starts with 'app_team' %}sidebar__link--active{% endif %}">
+                       class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_team' %}tactical-sidebar__link--active{% endif %}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="0"/><path d="M8 21h8M12 17v4"/></svg>
                         Mes équipes
                     </a>
                     <a href="{{ path('app_match_prepare') }}"
-                       class="sidebar__link {% if app.request.attributes.get('_route') starts with 'app_match' %}sidebar__link--active{% endif %}">
+                       class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_match' %}tactical-sidebar__link--active{% endif %}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 4v16"/><path d="M17 4v16"/><path d="M3 8h18"/><path d="M3 16h18"/><path d="M12 8v8"/></svg>
                         Préparer un match
                     </a>
                     {% set teamId = app.request.attributes.get('teamId') ?? app.request.attributes.get('id') %}
-                    {% if teamId and (app.request.attributes.get('_route') starts with 'app_composition' or app.request.attributes.get('_route') starts with 'app_player' or app.request.attributes.get('_route') starts with 'app_plan') %}
-                        <span class="sidebar__section-label" style="margin-top:1rem;">Équipe</span>
+                    {% if teamId and (app.request.attributes.get('_route') starts with 'app_composition' or app.request.attributes.get('_route') starts with 'app_player' or app.request.attributes.get('_route') starts with 'app_plan' or app.request.attributes.get('_route') starts with 'app_team_calendar' or app.request.attributes.get('_route') starts with 'app_training' or app.request.attributes.get('_route') starts with 'app_fixture' or app.request.attributes.get('_route') starts with 'app_team_attendance') %}
+                        <span class="tactical-sidebar__section-label" style="margin-top:1rem;">Équipe</span>
                         <a href="{{ path('app_composition_index', {id: teamId}) }}"
-                           class="sidebar__link {% if app.request.attributes.get('_route') starts with 'app_composition' %}sidebar__link--active{% endif %}">
+                           class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_composition' %}tactical-sidebar__link--active{% endif %}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 4.9 18.7M2.1 9h19.8M2.1 15h19.8M12 2C9.3 7 8 12 8 12s1.3 5 4 10M12 2c2.7 5 4 10 4 10s-1.3 5-4 10"/></svg>
                             Composition
                         </a>
                         <a href="{{ path('app_plan_index', {teamId: teamId}) }}"
-                           class="sidebar__link {% if app.request.attributes.get('_route') starts with 'app_plan' %}sidebar__link--active{% endif %}">
+                           class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_plan' %}tactical-sidebar__link--active{% endif %}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                             Plans
                         </a>
                         <a href="{{ path('app_player_index', {teamId: teamId}) }}"
-                           class="sidebar__link {% if app.request.attributes.get('_route') starts with 'app_player' %}sidebar__link--active{% endif %}">
+                           class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_player' %}tactical-sidebar__link--active{% endif %}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                             Effectif
                         </a>
+                        <a href="{{ path('app_team_calendar', {id: teamId}) }}"
+                           class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_team_calendar' or app.request.attributes.get('_route') starts with 'app_training' or app.request.attributes.get('_route') starts with 'app_fixture' %}tactical-sidebar__link--active{% endif %}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="0"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                            Calendrier
+                        </a>
+                        <a href="{{ path('app_team_attendance_summary', {id: teamId}) }}"
+                           class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_team_attendance' %}tactical-sidebar__link--active{% endif %}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                            Présences
+                        </a>
                     {% endif %}
                 </nav>
-                <div class="sidebar__footer">
-                    <div class="sidebar__user">
-                        <div class="sidebar__avatar">{{ app.user.firstName|slice(0,1) }}{{ app.user.lastName|slice(0,1) }}</div>
+                <div class="tactical-sidebar__footer">
+                    <div class="tactical-sidebar__user">
+                        <div class="tactical-sidebar__avatar">{{ app.user.firstName|slice(0,1) }}{{ app.user.lastName|slice(0,1) }}</div>
                         <div>
-                            <div class="sidebar__user-name">{{ app.user.fullName }}</div>
-                            <div class="sidebar__user-role">Coach</div>
+                            <div class="tactical-sidebar__user-name">{{ app.user.fullName }}</div>
+                            <div class="tactical-sidebar__user-role">Coach</div>
                         </div>
                     </div>
-                    <a href="{{ path('app_logout') }}" class="sidebar__logout">Déconnexion →</a>
+                    <a href="{{ path('app_logout') }}" class="tactical-sidebar__logout">Déconnexion →</a>
                 </div>
             </aside>
 
-            <main class="main-content">
+            <main class="tactical-main">
                 {% if app.flashes|length > 0 %}
-                    <div class="flash-messages">
+                    <div class="tactical-flash-wrap">
                         {% for type, messages in app.flashes %}
                             {% for message in messages %}
-                                <div class="flash flash--{{ type }}">{{ message }}</div>
+                                <div class="tactical-flash tactical-flash--{{ type }}">{{ message }}</div>
                             {% endfor %}
                         {% endfor %}
                     </div>

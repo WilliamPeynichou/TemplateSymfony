@@ -1,26 +1,49 @@
 {% extends 'layout/app.html.twig' %}
 {% block title %}{{ organization.name }}{% endblock %}
 {% block content %}
-    <h1>{{ organization.name }}</h1>
-    <p>Créée le {{ organization.createdAt|date('d/m/Y') }}</p>
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">{{ organization.name }}</h1>
+        <p class="tactical-page-header__sub">Créée le {{ organization.createdAt|date('d/m/Y') }}</p>
+    </div>
+    <a href="{{ path('app_organization_index') }}" class="tactical-btn tactical-btn--outline">← Retour</a>
+</div>
+<div class="tactical-page-body">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--space-md);">
+        <div class="tactical-card">
+            <div class="tactical-card__title">Membres</div>
+            <div class="tactical-table-wrap">
+                <table class="tactical-table">
+                    <tbody>
+                        <tr>
+                            <td>{{ organization.owner.email }}</td>
+                            <td><span class="tactical-badge tactical-badge--lime">Owner</span></td>
+                        </tr>
+                        {% for m in organization.memberships %}
+                            {% if m.role != 'owner' %}
+                                <tr>
+                                    <td>{{ m.user.email }}</td>
+                                    <td><span class="tactical-badge">{{ m.role }}</span></td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <h2>Membres</h2>
-    <ul>
-        <li>{{ organization.owner.email }} (owner)</li>
-        {% for m in organization.memberships %}
-            {% if m.role != 'owner' %}
-                <li>{{ m.user.email }} — {{ m.role }}</li>
-            {% endif %}
-        {% endfor %}
-    </ul>
-
-    {% if is_granted('ORG_OWNER', organization) %}
-        <h2>Inviter un membre</h2>
-        <form method="post" action="{{ path('app_organization_invite', {id: organization.id}) }}">
-            <label>Email
-                <input type="email" name="email" required>
-            </label>
-            <button type="submit">Envoyer l'invitation</button>
-        </form>
-    {% endif %}
+        {% if is_granted('ORG_OWNER', organization) %}
+            <div class="tactical-card">
+                <div class="tactical-card__title">Inviter un membre</div>
+                <form method="post" action="{{ path('app_organization_invite', {id: organization.id}) }}" style="margin-top:var(--space-sm);">
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label">Email</label>
+                        <input type="email" name="email" class="tactical-input" required placeholder="coach@exemple.fr">
+                    </div>
+                    <button type="submit" class="tactical-btn tactical-btn--primary">Envoyer l'invitation</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

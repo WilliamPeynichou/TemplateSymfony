@@ -2,68 +2,97 @@
 {% block title %}Nouveau joueur — {{ team.name }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="tactical-page-header">
     <div>
-        <h1 class="page-header__title">Nouveau <em>joueur</em></h1>
-        <p class="page-header__sub">{{ team.name }}</p>
+        <h1 class="tactical-page-header__title">Nouveau <em>joueur</em></h1>
+        <p class="tactical-page-header__sub">{{ team.name }}</p>
     </div>
-    <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="btn">← Retour</a>
+    <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">← Retour</a>
 </div>
-<div class="page-body">
-    <div class="form-card" style="max-width:760px;">
+<div class="tactical-page-body">
+    <div class="tactical-form-card" style="max-width:760px;">
         {{ form_start(form, {attr: {enctype: 'multipart/form-data'}}) }}
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.firstName) }}</label>
-                    {{ form_widget(form.firstName, {attr: {class: 'form-control'}}) }}
-                    <div class="form-error">{{ form_errors(form.firstName) }}</div>
+            <div class="tactical-form-row">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.firstName) }}</label>
+                    {{ form_widget(form.firstName, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.firstName) }}</div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.lastName) }}</label>
-                    {{ form_widget(form.lastName, {attr: {class: 'form-control'}}) }}
-                    <div class="form-error">{{ form_errors(form.lastName) }}</div>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.number) }}</label>
-                    {{ form_widget(form.number, {attr: {class: 'form-control'}}) }}
-                    <div class="form-error">{{ form_errors(form.number) }}</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.position) }}</label>
-                    {{ form_widget(form.position, {attr: {class: 'form-control'}}) }}
-                    <div class="form-error">{{ form_errors(form.position) }}</div>
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.lastName) }}</label>
+                    {{ form_widget(form.lastName, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.lastName) }}</div>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.dateOfBirth) }}</label>
-                    {{ form_widget(form.dateOfBirth, {attr: {class: 'form-control'}}) }}
+            <div class="tactical-form-row">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.number) }}</label>
+                    {{ form_widget(form.number, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.number) }}</div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.strongFoot) }}</label>
-                    {{ form_widget(form.strongFoot, {attr: {class: 'form-control'}}) }}
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.height) }}</label>
-                    {{ form_widget(form.height, {attr: {class: 'form-control'}}) }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.weight) }}</label>
-                    {{ form_widget(form.weight, {attr: {class: 'form-control'}}) }}
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.position) }}</label>
+                    {{ form_widget(form.position, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.position) }}</div>
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">{{ form_label(form.photoFile) }}</label>
+            <div class="tactical-form-row">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.status) }}</label>
+                    {{ form_widget(form.status, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.status) }}</div>
+                </div>
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.statusReason) }}</label>
+                    {{ form_widget(form.statusReason, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.statusReason) }}</div>
+                </div>
+            </div>
+            <div class="tactical-form-row">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.email) }}</label>
+                    {{ form_widget(form.email, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.email) }}</div>
+                </div>
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.phone) }}</label>
+                    {{ form_widget(form.phone, {attr: {class: 'tactical-input'}}) }}
+                    <div class="tactical-form-error">{{ form_errors(form.phone) }}</div>
+                </div>
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label">{{ form_label(form.emergencyContact) }}</label>
+                {{ form_widget(form.emergencyContact, {attr: {class: 'tactical-input'}}) }}
+                <div class="tactical-form-error">{{ form_errors(form.emergencyContact) }}</div>
+            </div>
+            <div class="tactical-form-row">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.dateOfBirth) }}</label>
+                    {{ form_widget(form.dateOfBirth, {attr: {class: 'tactical-input'}}) }}
+                </div>
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.strongFoot) }}</label>
+                    {{ form_widget(form.strongFoot, {attr: {class: 'tactical-input'}}) }}
+                </div>
+            </div>
+            <div class="tactical-form-row">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.height) }}</label>
+                    {{ form_widget(form.height, {attr: {class: 'tactical-input'}}) }}
+                </div>
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.weight) }}</label>
+                    {{ form_widget(form.weight, {attr: {class: 'tactical-input'}}) }}
+                </div>
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label">{{ form_label(form.photoFile) }}</label>
                 {{ form_widget(form.photoFile) }}
-                <div class="form-error">{{ form_errors(form.photoFile) }}</div>
+                <div class="tactical-form-error">{{ form_errors(form.photoFile) }}</div>
             </div>
-            <div class="form-actions">
-                <button class="btn btn--filled" type="submit">Ajouter le joueur</button>
-                <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="btn">Annuler</a>
+            <div class="tactical-form-actions">
+                <button class="tactical-btn tactical-btn--primary" type="submit">Ajouter le joueur</button>
+                <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">Annuler</a>
             </div>
         {{ form_end(form) }}
     </div>

@@ -13,124 +13,166 @@
 {% endblock %}
 
 {% block body %}
-<div class="match-layout" data-match-board>
-    <aside class="match-side-panel match-side-panel--home">
-        <div class="match-side-panel__header">
-            <div class="match-side-panel__label">{{ match.home.label }}</div>
-            <div class="match-side-panel__title">{{ match.home.name }}</div>
-            <div class="match-side-panel__sub">{{ match.home.players|length }} joueurs disponibles</div>
+<div class="tactical-match-layout" data-match-board>
+    <aside class="tactical-match-side-panel tactical-match-side-panel--home">
+        <div class="tactical-match-side-panel__header">
+            <div class="tactical-match-side-panel__label">{{ match.home.label }}</div>
+            <div class="tactical-match-side-panel__title">{{ match.home.name }}</div>
+            <div class="tactical-match-side-panel__sub">{{ match.home.players|length }} joueurs disponibles</div>
         </div>
 
-        <div class="bench-scroll">
-            <div class="bench-list" data-bench-side="home">
+        <div class="tactical-bench-scroll">
+            <div class="tactical-bench-list" data-bench-side="home">
                 {% for player in match.home.players %}
                     {% set posGroup = player.position == 'GK' ? 'GK' : (player.position in ['CB','LB','RB'] ? 'DEF' : (player.position in ['CDM','CM','CAM'] ? 'MIL' : 'ATT')) %}
-                    <div class="bench-card bench-card--home"
+                    <div class="tactical-bench-card tactical-bench-card--home"
                          draggable="true"
                          data-player-id="{{ player.id }}"
                          data-pos-group="{{ posGroup }}"
                          data-side="home"
                          data-player-data="{{ player|json_encode }}">
                         {% if player.photo %}
-                            <img src="/uploads/players/{{ player.photo }}" class="bench-card__photo" alt="">
+                            <img src="/uploads/players/{{ player.photo }}" class="tactical-bench-card__photo" alt="">
                         {% else %}
-                            <div class="bench-card__avatar bench-card__avatar--{{ posGroup|lower }}">{{ player.shortName|slice(0,2)|upper }}</div>
+                            <div class="tactical-bench-card__avatar tactical-bench-card__avatar--{{ posGroup|lower }}">{{ player.shortName|slice(0,2)|upper }}</div>
                         {% endif %}
-                        <div class="bench-card__info">
-                            <div class="bench-card__name">{{ player.name }}</div>
-                            <div class="bench-card__meta">
-                                <span class="bench-card__num">#{{ player.number }}</span>
-                                <span class="pos-badge pos-badge--{{ posGroup|lower }}">{{ player.position }}</span>
+                        <div class="tactical-bench-card__info">
+                            <div class="tactical-bench-card__name">{{ player.name }}</div>
+                            <div class="tactical-bench-card__meta">
+                                <span class="tactical-bench-card__num">#{{ player.number }}</span>
+                                <span class="tactical-chip-pos tactical-chip-pos--{{ posGroup|lower }}">{{ player.position }}</span>
                             </div>
                         </div>
-                        <div class="bench-card__drag">⣿</div>
+                        <div class="tactical-bench-card__drag">⣿</div>
                     </div>
                 {% endfor %}
             </div>
         </div>
     </aside>
 
-    <div class="pitch-area match-pitch-area">
-        <div class="pitch-toolbar">
-            <div class="pitch-toolbar__left">
-                <a href="{{ path('app_match_prepare') }}" class="pitch-back" title="Retour à la préparation">
+    <div class="tactical-pitch-area tactical-match-pitch-area">
+        <div class="tactical-pitch-toolbar">
+            <div class="tactical-pitch-toolbar__left">
+                <a href="{{ path('app_match_prepare') }}" class="tactical-pitch-back" title="Retour à la préparation">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
                 </a>
                 <div>
-                    <div class="pitch-toolbar__title"><em>{{ match.home.name }}</em> vs <em>{{ match.away.name }}</em></div>
-                    <div class="pitch-toolbar__sub">Glissez les deux effectifs sur le terrain pour construire votre plan de match.</div>
+                    <div class="tactical-pitch-toolbar__title"><em>{{ match.home.name }}</em> vs <em>{{ match.away.name }}</em></div>
+                    <div class="tactical-pitch-toolbar__sub">
+                        {% if context and context.competition %}{{ context.competition }} · {% endif %}
+                        {% if context and context.kickoff %}{{ context.kickoff|replace({'T': ' '}) }} · {% endif %}
+                        Glissez les deux effectifs sur le terrain pour construire votre plan de match.
+                    </div>
                 </div>
             </div>
-            <div class="pitch-toolbar__actions">
-                <div class="match-selected" data-match-selected>
-                    <span class="match-selected__label">Aucun joueur sélectionné</span>
+            <div class="tactical-pitch-toolbar__actions">
+                <div class="tactical-match-selected" data-match-selected>
+                    <span class="tactical-match-selected__label">Aucun joueur sélectionné</span>
                 </div>
-                <button type="button" class="btn btn--sm" data-match-remove disabled>Retirer du terrain</button>
+                <button type="button" class="tactical-btn tactical-btn--sm tactical-btn--outline" data-match-remove disabled>Retirer du terrain</button>
             </div>
         </div>
 
-        <div class="pitch-container">
-            <div class="pitch-wrapper" data-match-wrapper>
-                <svg class="pitch-svg" viewBox="0 0 68 105" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="68" height="105" fill="#1a3319"/>
+        {% if context %}
+            <div class="tactical-match-briefing">
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Briefing coach</div>
+                    <div class="tactical-card__sub">
+                        {% if context.objective %}{{ context.objective }}{% else %}Aucun objectif principal saisi.{% endif %}
+                    </div>
+                    <div class="tactical-match-briefing__grid">
+                        <div><span class="tactical-badge tactical-badge--lime">{{ context.shape ?: '4-3-3' }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Système cible</p></div>
+                        <div><span class="tactical-badge">{{ context.venue == 'away' ? 'Extérieur' : (context.venue == 'neutral' ? 'Neutre' : 'Domicile') }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Contexte</p></div>
+                    </div>
+                </div>
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Consignes</div>
+                    <div class="tactical-match-briefing__notes">
+                        {% if context.pressingPlan %}<p><strong>Sans ballon:</strong> {{ context.pressingPlan }}</p>{% endif %}
+                        {% if context.inPossessionPlan %}<p><strong>Avec ballon:</strong> {{ context.inPossessionPlan }}</p>{% endif %}
+                        {% if context.transitionPlan %}<p><strong>Transitions:</strong> {{ context.transitionPlan }}</p>{% endif %}
+                        {% if context.setPiecesPlan %}<p><strong>CPA:</strong> {{ context.setPiecesPlan }}</p>{% endif %}
+                        {% if context.watchouts %}<p><strong>Vigilance:</strong> {{ context.watchouts }}</p>{% endif %}
+                    </div>
+                </div>
+                {% if homeInsights %}
+                    <div class="tactical-card">
+                        <div class="tactical-card__title">{{ homeInsights.teamName }}</div>
+                        <div class="tactical-card__sub">{{ homeInsights.counts.available }} disponibles · {{ homeInsights.counts.unavailable }} indisponibles</div>
+                        {% if homeInsights.unavailable is not empty %}
+                            <div class="tactical-match-briefing__list">
+                                {% for player in homeInsights.unavailable %}
+                                    <div class="tactical-match-briefing__item">#{{ player.number }} {{ player.name }}{% if player.statusReason %} · {{ player.statusReason }}{% endif %}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="tactical-pitch-container">
+            <div class="tactical-pitch-wrapper" data-match-wrapper>
+                <svg class="tactical-pitch-svg" viewBox="0 0 68 105" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="68" height="105" fill="#101415"/>
                     {% for i in 0..6 %}
-                        <rect x="0" y="{{ i * 15 }}" width="68" height="7.5" fill="{{ i % 2 == 0 ? '#1a3319' : '#1e3d1e' }}"/>
+                        <rect x="0" y="{{ i * 15 }}" width="68" height="7.5" fill="{{ i % 2 == 0 ? '#101415' : 'rgba(255,255,255,0.03)' }}"/>
                     {% endfor %}
-                    <rect x="1" y="1" width="66" height="103" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <line x1="1" y1="52.5" x2="67" y2="52.5" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <circle cx="34" cy="52.5" r="9.15" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <circle cx="34" cy="52.5" r="0.5" fill="#3d6b3d"/>
-                    <rect x="13.84" y="1" width="40.32" height="16.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <rect x="24.84" y="1" width="18.32" height="5.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <rect x="29.3" y="0" width="9.4" height="1" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <circle cx="34" cy="12" r="0.5" fill="#3d6b3d"/>
-                    <path d="M 20.16 17.5 A 9.15 9.15 0 0 1 47.84 17.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <rect x="13.84" y="87.5" width="40.32" height="16.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <rect x="24.84" y="98.5" width="18.32" height="5.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <rect x="29.3" y="104" width="9.4" height="1" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <circle cx="34" cy="93" r="0.5" fill="#3d6b3d"/>
-                    <path d="M 20.16 87.5 A 9.15 9.15 0 0 0 47.84 87.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <path d="M 1 3.5 A 2.5 2.5 0 0 0 3.5 1" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <path d="M 64.5 1 A 2.5 2.5 0 0 0 67 3.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <path d="M 1 101.5 A 2.5 2.5 0 0 1 3.5 104" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
-                    <path d="M 64.5 104 A 2.5 2.5 0 0 1 67 101.5" fill="none" stroke="#3d6b3d" stroke-width="0.5"/>
+                    <rect x="1" y="1" width="66" height="103" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <line x1="1" y1="52.5" x2="67" y2="52.5" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <circle cx="34" cy="52.5" r="9.15" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <circle cx="34" cy="52.5" r="0.7" fill="#c7f300"/>
+                    <rect x="13.84" y="1" width="40.32" height="16.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <rect x="24.84" y="1" width="18.32" height="5.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <rect x="29.3" y="0" width="9.4" height="1" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <circle cx="34" cy="12" r="0.5" fill="rgba(199,243,0,0.4)"/>
+                    <path d="M 20.16 17.5 A 9.15 9.15 0 0 1 47.84 17.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <rect x="13.84" y="87.5" width="40.32" height="16.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <rect x="24.84" y="98.5" width="18.32" height="5.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <rect x="29.3" y="104" width="9.4" height="1" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <circle cx="34" cy="93" r="0.5" fill="rgba(199,243,0,0.4)"/>
+                    <path d="M 20.16 87.5 A 9.15 9.15 0 0 0 47.84 87.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <path d="M 1 3.5 A 2.5 2.5 0 0 0 3.5 1" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <path d="M 64.5 1 A 2.5 2.5 0 0 0 67 3.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <path d="M 1 101.5 A 2.5 2.5 0 0 1 3.5 104" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+                    <path d="M 64.5 104 A 2.5 2.5 0 0 1 67 101.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
                 </svg>
 
-                <div class="pitch-players" data-match-players></div>
+                <div class="tactical-pitch-players" data-match-players></div>
             </div>
         </div>
     </div>
 
-    <aside class="match-side-panel match-side-panel--away">
-        <div class="match-side-panel__header">
-            <div class="match-side-panel__label">{{ match.away.label }}</div>
-            <div class="match-side-panel__title">{{ match.away.name }}</div>
-            <div class="match-side-panel__sub">{{ match.away.players|length }} joueurs disponibles</div>
+    <aside class="tactical-match-side-panel tactical-match-side-panel--away">
+        <div class="tactical-match-side-panel__header">
+            <div class="tactical-match-side-panel__label">{{ match.away.label }}</div>
+            <div class="tactical-match-side-panel__title">{{ match.away.name }}</div>
+            <div class="tactical-match-side-panel__sub">{{ match.away.players|length }} joueurs disponibles</div>
         </div>
 
-        <div class="bench-scroll">
-            <div class="bench-list" data-bench-side="away">
+        <div class="tactical-bench-scroll">
+            <div class="tactical-bench-list" data-bench-side="away">
                 {% for player in match.away.players %}
                     {% set posGroup = player.position == 'GK' ? 'GK' : (player.position in ['CB','LB','RB'] ? 'DEF' : (player.position in ['CDM','CM','CAM'] ? 'MIL' : 'ATT')) %}
-                    <div class="bench-card bench-card--away"
+                    <div class="tactical-bench-card tactical-bench-card--away"
                          draggable="true"
                          data-player-id="{{ player.id }}"
                          data-pos-group="{{ posGroup }}"
                          data-side="away"
                          data-player-data="{{ player|json_encode }}">
                         {% if player.photo %}
-                            <img src="/uploads/players/{{ player.photo }}" class="bench-card__photo" alt="">
+                            <img src="/uploads/players/{{ player.photo }}" class="tactical-bench-card__photo" alt="">
                         {% else %}
-                            <div class="bench-card__avatar bench-card__avatar--{{ posGroup|lower }}">{{ player.shortName|slice(0,2)|upper }}</div>
+                            <div class="tactical-bench-card__avatar tactical-bench-card__avatar--{{ posGroup|lower }}">{{ player.shortName|slice(0,2)|upper }}</div>
                         {% endif %}
-                        <div class="bench-card__info">
-                            <div class="bench-card__name">{{ player.name }}</div>
-                            <div class="bench-card__meta">
-                                <span class="bench-card__num">#{{ player.number }}</span>
-                                <span class="pos-badge pos-badge--{{ posGroup|lower }}">{{ player.position }}</span>
+                        <div class="tactical-bench-card__info">
+                            <div class="tactical-bench-card__name">{{ player.name }}</div>
+                            <div class="tactical-bench-card__meta">
+                                <span class="tactical-bench-card__num">#{{ player.number }}</span>
+                                <span class="tactical-chip-pos tactical-chip-pos--{{ posGroup|lower }}">{{ player.position }}</span>
                             </div>
                         </div>
-                        <div class="bench-card__drag">⣿</div>
+                        <div class="tactical-bench-card__drag">⣿</div>
                     </div>
                 {% endfor %}
             </div>

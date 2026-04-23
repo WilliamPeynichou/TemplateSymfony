@@ -1,4 +1,16 @@
+{% extends 'email/_layout.html.twig' %}
+
+{% block subject %}Invitation à rejoindre {{ orgName }} sur Andfield{% endblock %}
+
+{% block content %}
 <p>Bonjour,</p>
-<p>Vous êtes invité·e à rejoindre l'organisation <strong>{{ orgName }}</strong> sur Andfield.</p>
-<p><a href="{{ acceptLink }}">Accepter l'invitation</a></p>
-<p>Cette invitation expire dans 7 jours.</p>
+<p>Vous êtes invité·e à rejoindre l'organisation <strong>{{ orgName }}</strong> sur Andfield — la plateforme coaching football.</p>
+<p>En acceptant, vous accéderez aux équipes et outils partagés de cette organisation.</p>
+<p style="font-size:13px;color:#8a876e;">Cette invitation expire dans 7 jours.</p>
+{% endblock %}
+
+{% block cta %}
+<div class="cta-wrap">
+  <a href="{{ acceptLink }}" class="cta">Accepter l'invitation</a>
+</div>
+{% endblock %}

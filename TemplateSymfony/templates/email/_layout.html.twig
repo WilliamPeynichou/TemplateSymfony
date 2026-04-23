@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="only light">
+<title>{% block subject %}Andfield{% endblock %}</title>
+<style>
+  body { margin:0; padding:0; background:#f5f3ee; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; -webkit-text-size-adjust:100%; }
+  table { border-collapse:collapse; }
+  a { color:#22342a; }
+
+  .wrapper { background:#f5f3ee; padding:32px 16px; }
+  .container { max-width:600px; margin:0 auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+
+  .header { background:#22342a; padding:28px 32px; border-bottom:3px solid #a8c93e; }
+  .header__logo { font-size:22px; font-weight:700; color:#f5f3ee; text-decoration:none; letter-spacing:-0.5px; }
+  .header__logo em { color:#c7f300; font-style:normal; }
+
+  .body { padding:32px 32px 24px; }
+  .body p { font-size:15px; line-height:1.7; color:#1e1c18; margin:0 0 16px; }
+  .body h2 { font-size:18px; font-weight:700; color:#22342a; margin:0 0 12px; border-bottom:2px solid #a8c93e; padding-bottom:8px; }
+  .body ul { padding-left:20px; margin:0 0 16px; }
+  .body ul li { font-size:15px; line-height:1.7; color:#1e1c18; margin-bottom:4px; }
+
+  .cta-wrap { padding:8px 0 24px; }
+  .cta { display:inline-block; background:#c7f300; color:#22342a !important; text-decoration:none; padding:14px 28px; border-radius:4px; font-size:14px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+
+  .footer { background:#f5f3ee; border-top:1px solid #e4e1d8; padding:20px 32px; }
+  .footer p { font-size:12px; color:#8a876e; margin:0; line-height:1.5; }
+  .footer a { color:#8a876e; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <table class="container" width="600" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td class="header">
+        <a href="https://andfield.app" class="header__logo">And<em>field</em></a>
+      </td>
+    </tr>
+    <tr>
+      <td class="body">
+        {% block content %}{% endblock %}
+        {% block cta %}{% endblock %}
+      </td>
+    </tr>
+    <tr>
+      <td class="footer">
+        <p>Conçu en France · <a href="https://andfield.app">Andfield</a> — La plateforme coaching football.<br>
+        Vous recevez cet email car vous avez un compte sur Andfield.</p>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

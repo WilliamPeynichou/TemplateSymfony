@@ -1,3 +1,19 @@
+{% extends 'email/_layout.html.twig' %}
+
+{% block subject %}Bienvenue sur Andfield{% endblock %}
+
+{% block content %}
 <p>Bienvenue chez <strong>Andfield</strong> !</p>
-<p>Votre espace coach est prêt. Commencez par créer votre équipe puis ajoutez vos joueurs.</p>
-<p>Pour toute question, rendez-vous dans l'onglet <em>Coach IA</em>.</p>
+<p>Votre espace coach est prêt. Commencez par créer votre première équipe, ajoutez vos joueurs, puis explorez la composition tactique et l'assistant IA.</p>
+<ul>
+  <li>Créez votre équipe et ajoutez vos joueurs</li>
+  <li>Placez-les sur le terrain interactif</li>
+  <li>Interrogez l'IA Coach sur votre effectif</li>
+</ul>
+{% endblock %}
+
+{% block cta %}
+<div class="cta-wrap">
+  <a href="https://andfield.app/team" class="cta">Ouvrir mon espace coach</a>
+</div>
+{% endblock %}

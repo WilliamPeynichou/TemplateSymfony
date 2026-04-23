@@ -2,39 +2,38 @@
 {% block title %}Notes post-match — {{ team.name }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="tactical-page-header">
     <div>
-        <h1 class="page-header__title">Notes post-match <em>{{ team.name }}</em></h1>
-        <p class="page-header__sub">{{ notes|length }} note{{ notes|length > 1 ? 's' : '' }}</p>
+        <h1 class="tactical-page-header__title">Notes post-match <em>{{ team.name }}</em></h1>
+        <p class="tactical-page-header__sub">{{ notes|length }} note{{ notes|length > 1 ? 's' : '' }}</p>
     </div>
-    <a href="{{ path('app_match_note_new', {teamId: team.id}) }}" class="btn btn--filled">+ Nouvelle note</a>
+    <a href="{{ path('app_match_note_new', {teamId: team.id}) }}" class="tactical-btn tactical-btn--primary">+ Nouvelle note</a>
 </div>
 
-<div class="page-body">
+<div class="tactical-page-body">
     {% if notes|length == 0 %}
-        <div class="card" style="text-align:center;padding:3rem;">
-            <span style="font-size:2.5rem;">📝</span>
-            <p style="margin-top:1rem;color:var(--text-muted);">Aucune note post-match pour le moment.</p>
-            <a href="{{ path('app_match_note_new', {teamId: team.id}) }}" class="btn btn--filled" style="margin-top:1rem;">Rédiger ma première note</a>
+        <div class="tactical-card" style="text-align:center;padding:3rem;">
+            <p style="margin-top:1rem;color:var(--on-surface-variant);">Aucune note post-match pour le moment.</p>
+            <a href="{{ path('app_match_note_new', {teamId: team.id}) }}" class="tactical-btn tactical-btn--primary" style="margin-top:1rem;">Rédiger ma première note</a>
         </div>
     {% else %}
-        <div class="card-grid">
+        <div class="tactical-card-grid">
             {% for note in notes %}
-            <div class="card">
+            <div class="tactical-card">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
                     <div>
-                        <strong>{{ note.matchLabel }}</strong>
-                        <div style="font-size:.85rem;color:var(--text-muted);">{{ note.matchDate|date('d/m/Y') }}</div>
+                        <strong style="color:var(--on-surface);">{{ note.matchLabel }}</strong>
+                        <div style="font-size:var(--text-label-sm);color:var(--on-surface-variant);">{{ note.matchDate|date('d/m/Y') }}</div>
                     </div>
                     <div style="display:flex;gap:.5rem;">
-                        <a href="{{ path('app_match_note_edit', {teamId: team.id, id: note.id}) }}" class="btn btn--sm">Éditer</a>
+                        <a href="{{ path('app_match_note_edit', {teamId: team.id, id: note.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">Éditer</a>
                         <form method="post" action="{{ path('app_match_note_delete', {teamId: team.id, id: note.id}) }}" onsubmit="return confirm('Supprimer cette note ?')">
                             <input type="hidden" name="_token" value="{{ csrf_token('delete_match_note_' ~ note.id) }}">
-                            <button class="btn btn--sm btn--danger">Suppr.</button>
+                            <button class="tactical-btn tactical-btn--danger tactical-btn--sm">Suppr.</button>
                         </form>
                     </div>
                 </div>
-                <p style="font-size:.9rem;color:var(--text-body);white-space:pre-wrap;">{{ note.content|slice(0, 200) }}{% if note.content|length > 200 %}…{% endif %}</p>
+                <p style="font-size:var(--text-label-bold);color:var(--on-surface-variant);white-space:pre-wrap;line-height:1.6;">{{ note.content|slice(0, 200) }}{% if note.content|length > 200 %}…{% endif %}</p>
             </div>
             {% endfor %}
         </div>

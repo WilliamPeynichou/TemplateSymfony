@@ -2,37 +2,39 @@
 {% block title %}Effectif — {{ team.name }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="tactical-page-header">
     <div>
-        <h1 class="page-header__title">Effectif <em>{{ team.name }}</em></h1>
-        <p class="page-header__sub">{{ players|length }} joueur{{ players|length > 1 ? 's' : '' }}</p>
+        <h1 class="tactical-page-header__title">Effectif <em>{{ team.name }}</em></h1>
+        <p class="tactical-page-header__sub">{{ players|length }} joueur{{ players|length > 1 ? 's' : '' }}</p>
     </div>
-    <div style="display:flex;gap:1rem;">
-        <a href="{{ path('app_composition_index', {id: team.id}) }}" class="btn">⚽ Composition</a>
-        <a href="{{ path('app_player_new', {teamId: team.id}) }}" class="btn btn--filled">+ Joueur</a>
+    <div style="display:flex;gap:0.75rem;">
+        <a href="{{ path('app_composition_index', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Composition</a>
+        <a href="{{ path('app_player_new', {teamId: team.id}) }}" class="tactical-btn tactical-btn--primary">+ Joueur</a>
     </div>
 </div>
 
-<div class="page-body">
+<div class="tactical-page-body">
     {% if players|length == 0 %}
-        <div class="card-grid">
-            <div class="card card--empty">
-                <span style="font-size:2.5rem;">👤</span>
-                <p style="font-size:var(--text-sm);color:var(--stone-600);max-width:30ch;">
+        <div class="tactical-card-grid">
+            <div class="tactical-card tactical-card--empty">
+                <p style="font-size:var(--text-label-bold);color:var(--on-surface-variant);max-width:30ch;">
                     Aucun joueur dans cet effectif. Ajoutez vos premiers joueurs.
                 </p>
-                <a href="{{ path('app_player_new', {teamId: team.id}) }}" class="btn">Ajouter un joueur</a>
+                <a href="{{ path('app_player_new', {teamId: team.id}) }}" class="tactical-btn tactical-btn--ghost">Ajouter un joueur</a>
             </div>
         </div>
     {% else %}
-        <div class="table-wrap">
-            <table class="table">
+        <div class="tactical-table-wrap">
+            <table class="tactical-table">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Joueur</th>
                         <th>Poste</th>
+                        <th>Statut</th>
                         <th>Âge</th>
+                        <th>Contact</th>
+                        <th>Présence</th>
                         <th>Pied</th>
                         <th>Taille</th>
                         <th>Poids</th>
@@ -41,25 +43,54 @@
                 </thead>
                 <tbody>
                     {% for player in players %}
+                        {% set posGroup = player.position == 'GK' ? 'gk' : (player.position in ['CB','LB','RB'] ? 'def' : (player.position in ['CDM','CM','CAM'] ? 'mil' : 'att')) %}
                         <tr>
                             <td>
-                                <span class="badge badge--brand">{{ player.number }}</span>
+                                <span class="tactical-badge tactical-badge--primary">{{ player.number }}</span>
                             </td>
                             <td>
                                 <div style="display:flex;align-items:center;gap:0.75rem;">
                                     {% if player.photo %}
                                         <img src="/uploads/players/{{ player.photo }}" alt=""
-                                             style="width:32px;height:32px;object-fit:cover;border-radius:50%;">
+                                             style="width:32px;height:32px;object-fit:cover;border-radius:var(--radius);">
                                     {% else %}
-                                        <div style="width:32px;height:32px;background:var(--hazel-green-200);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--brand-dark);font-weight:500;">
+                                        <div style="width:32px;height:32px;background:var(--surface-container-high);border:1px solid var(--outline-variant);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--on-surface);">
                                             {{ player.firstName|slice(0,1) }}{{ player.lastName|slice(0,1) }}
                                         </div>
                                     {% endif %}
-                                    <strong style="font-weight:500;">{{ player.fullName }}</strong>
+                                    <strong style="font-weight:600;">{{ player.fullName }}</strong>
                                 </div>
                             </td>
-                            <td><span class="badge">{{ player.position }}</span></td>
+                            <td><span class="tactical-chip-pos tactical-chip-pos--{{ posGroup }}">{{ player.position }}</span></td>
+                            <td>
+                                {% set statusClass = player.status == 'present' ? 'tactical-badge--lime' : (player.status == 'injured' ? 'tactical-btn--danger' : '') %}
+                                <span class="tactical-badge {{ statusClass }}">{{ player.statusLabel }}</span>
+                                {% if player.statusReason %}
+                                    <div style="margin-top:0.35rem;color:var(--on-surface-variant);font-size:var(--text-label-sm);max-width:18ch;">{{ player.statusReason }}</div>
+                                {% endif %}
+                            </td>
                             <td>{{ player.age ? player.age ~ ' ans' : '—' }}</td>
+                            <td>
+                                {% if player.phone or player.email %}
+                                    <div style="display:grid;gap:0.2rem;font-size:var(--text-label-sm);color:var(--on-surface-variant);">
+                                        {% if player.phone %}<span>{{ player.phone }}</span>{% endif %}
+                                        {% if player.email %}<span>{{ player.email }}</span>{% endif %}
+                                    </div>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set presence = attendanceSummary[player.id] ?? null %}
+                                {% if presence %}
+                                    <span class="tactical-badge {{ presence.rate >= 80 ? 'tactical-badge--lime' : '' }}">{{ presence.rate }}%</span>
+                                    <div style="margin-top:0.35rem;color:var(--on-surface-variant);font-size:var(--text-label-sm);white-space:nowrap;">
+                                        {{ presence.present }}/{{ presence.total }} présent{{ presence.present > 1 ? 's' : '' }}
+                                    </div>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if player.strongFoot == 'right' %}D
                                 {% elseif player.strongFoot == 'left' %}G
@@ -70,11 +101,11 @@
                             <td>{{ player.weight ? player.weight ~ ' kg' : '—' }}</td>
                             <td>
                                 <div style="display:flex;gap:0.5rem;">
-                                    <a href="{{ path('app_player_edit', {teamId: team.id, id: player.id}) }}" class="btn btn--sm">Modifier</a>
+                                    <a href="{{ path('app_player_edit', {teamId: team.id, id: player.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">Modifier</a>
                                     <form method="post" action="{{ path('app_player_delete', {teamId: team.id, id: player.id}) }}"
                                           onsubmit="return confirm('Supprimer {{ player.fullName }} ?')">
                                         <input type="hidden" name="_token" value="{{ csrf_token('delete_player_' ~ player.id) }}">
-                                        <button type="submit" class="btn btn--sm btn--danger">×</button>
+                                        <button type="submit" class="tactical-btn tactical-btn--danger tactical-btn--sm">×</button>
                                     </form>
                                 </div>
                             </td>

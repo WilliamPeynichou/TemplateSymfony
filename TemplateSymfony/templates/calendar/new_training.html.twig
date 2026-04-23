@@ -1,16 +1,46 @@
 {% extends 'layout/app.html.twig' %}
 {% block title %}Nouvelle séance{% endblock %}
 {% block content %}
-    <h1>Nouvelle séance — {{ team.name }}</h1>
-    <form method="post">
-        <p><label>Titre <input name="title" required></label></p>
-        <p><label>Début (YYYY-MM-DD HH:MM)
-            <input name="starts_at" type="datetime-local" required></label></p>
-        <p><label>Durée (minutes)
-            <input name="duration_minutes" type="number" value="90" min="15"></label></p>
-        <p><label>Lieu <input name="location"></label></p>
-        <p><label>Thématique <input name="focus" placeholder="ex. placement défensif"></label></p>
-        <p><label>Plan détaillé <textarea name="plan" rows="6" cols="60"></textarea></label></p>
-        <button type="submit">Créer</button>
-    </form>
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Nouvelle <em>séance</em></h1>
+        <p class="tactical-page-header__sub">{{ team.name }}</p>
+    </div>
+    <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">← Retour</a>
+</div>
+
+<div class="tactical-page-body">
+    <div class="tactical-form-card" style="max-width:560px;">
+        <form method="post">
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="title">Titre</label>
+                <input id="title" name="title" class="tactical-input" required placeholder="Ex : Séance défensive">
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="starts_at">Début</label>
+                <input id="starts_at" name="starts_at" type="datetime-local" class="tactical-input" required>
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="duration_minutes">Durée (minutes)</label>
+                <input id="duration_minutes" name="duration_minutes" type="number" class="tactical-input" value="90" min="15">
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="location">Lieu</label>
+                <input id="location" name="location" class="tactical-input" placeholder="Ex : Terrain municipal">
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="focus">Thématique</label>
+                <input id="focus" name="focus" class="tactical-input" placeholder="Ex : placement défensif">
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="plan">Plan détaillé</label>
+                <textarea id="plan" name="plan" class="tactical-input" rows="6" style="resize:vertical;"></textarea>
+            </div>
+            <div class="tactical-form-actions">
+                <button type="submit" class="tactical-btn tactical-btn--primary">Créer la séance</button>
+                <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

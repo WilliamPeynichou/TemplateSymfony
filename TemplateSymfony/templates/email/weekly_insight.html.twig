@@ -1,4 +1,18 @@
+{% extends 'email/_layout.html.twig' %}
+
+{% block subject %}Votre briefing hebdomadaire Andfield{% endblock %}
+
+{% block content %}
 <h2>Votre briefing hebdomadaire</h2>
-<p>Voici ce que l'IA a relevé cette semaine :</p>
-<div>{{ summaryHtml|raw }}</div>
-<p>Retrouvez le détail dans votre espace coach.</p>
+<p>Voici ce que l'IA Coach a relevé cette semaine à partir de vos données :</p>
+<div style="background:#f9f7f3;border-left:3px solid #a8c93e;padding:16px 20px;border-radius:0 4px 4px 0;margin:16px 0;">
+  {{ summaryHtml|raw }}
+</div>
+<p>Retrouvez le détail et posez vos questions à l'IA Coach dans votre espace.</p>
+{% endblock %}
+
+{% block cta %}
+<div class="cta-wrap">
+  <a href="https://andfield.app/team" class="cta">Ouvrir l'espace coach</a>
+</div>
+{% endblock %}

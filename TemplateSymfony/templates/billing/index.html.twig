@@ -3,38 +3,54 @@
 {% block title %}Abonnement{% endblock %}
 
 {% block content %}
-    <h1 class="page-title">Mon abonnement</h1>
+<div class="tactical-page-header">
+    <h1 class="tactical-page-header__title">Mon <em>abonnement</em></h1>
+</div>
 
+<div class="tactical-page-body">
     {% if currentSubscription %}
-        <section class="card">
-            <h2>Plan actuel</h2>
-            <p>
+        <div class="tactical-card" style="margin-bottom:var(--space-md);">
+            <div class="tactical-card__title">Plan actuel</div>
+            <p style="margin:0.75rem 0 0.25rem;">
                 <strong>{{ currentSubscription.plan.name }}</strong>
-                — statut : <code>{{ currentSubscription.status }}</code>
+                — statut :
+                <span class="tactical-badge {% if currentSubscription.status == 'active' %}tactical-badge--lime{% endif %}">
+                    {{ currentSubscription.status }}
+                </span>
             </p>
             {% if currentSubscription.currentPeriodEnd %}
-                <p>Renouvellement : {{ currentSubscription.currentPeriodEnd|date('d/m/Y') }}</p>
+                <p style="font-size:0.875rem;color:var(--on-surface-variant);margin:0.25rem 0 0;">
+                    Renouvellement : {{ currentSubscription.currentPeriodEnd|date('d/m/Y') }}
+                </p>
             {% endif %}
-        </section>
+        </div>
     {% else %}
-        <p>Vous êtes en plan gratuit.</p>
+        <div class="tactical-card" style="margin-bottom:var(--space-md);">
+            <p style="color:var(--on-surface-variant);margin:0;">Vous êtes en plan gratuit.</p>
+        </div>
     {% endif %}
 
-    <section style="margin-top:2rem;">
-        <h2>Changer de plan</h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
+    <div class="tactical-card">
+        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Changer de plan</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-sm);">
             {% for plan in availablePlans %}
                 <form method="post" action="{{ path('app_billing_checkout', {slug: plan.slug}) }}"
-                      style="border:1px solid #e5e5e5;padding:1.2rem;border-radius:10px;">
-                    <h3>{{ plan.name }}</h3>
-                    <p>{{ (plan.priceCents / 100)|number_format(2, ',', ' ') }} {{ plan.currency }} / {{ plan.billingInterval }}</p>
+                      style="border:1px solid var(--outline-variant);padding:var(--space-sm);border-radius:var(--radius-md);display:flex;flex-direction:column;gap:0.75rem;">
+                    <div>
+                        <div style="font-family:var(--font-display);font-size:1.0625rem;color:var(--on-surface);">{{ plan.name }}</div>
+                        <div style="font-size:0.9375rem;color:var(--secondary-container);font-weight:600;margin-top:0.25rem;">
+                            {{ (plan.priceCents / 100)|number_format(2, ',', ' ') }} {{ plan.currency }} / {{ plan.billingInterval }}
+                        </div>
+                    </div>
                     <input type="hidden" name="_token" value="{{ csrf_token('billing_checkout_' ~ plan.slug) }}">
                     <button type="submit"
+                            class="tactical-btn {% if currentSubscription and currentSubscription.plan.id == plan.id %}tactical-btn--outline{% else %}tactical-btn--primary{% endif %}"
                             {% if currentSubscription and currentSubscription.plan.id == plan.id %}disabled{% endif %}>
                         {% if currentSubscription and currentSubscription.plan.id == plan.id %}Plan actuel{% else %}Choisir{% endif %}
                     </button>
                 </form>
             {% endfor %}
         </div>
-    </section>
+    </div>
+</div>
 {% endblock %}

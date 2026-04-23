@@ -1,6 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 {% block title %}Hors-ligne{% endblock %}
 {% block content %}
-    <h1>Vous êtes hors-ligne</h1>
-    <p>Vérifiez votre connexion. Les pages déjà visitées restent disponibles.</p>
+<div class="tactical-page-header">
+    <h1 class="tactical-page-header__title">Vous êtes <em>hors-ligne</em></h1>
+</div>
+<div class="tactical-page-body">
+    <div class="tactical-card" style="max-width:480px;text-align:center;padding:var(--space-lg);">
+        <p style="color:var(--on-surface-variant);margin:0 0 var(--space-sm);">
+            Vérifiez votre connexion. Les pages déjà visitées restent disponibles hors-ligne.
+        </p>
+        <button onclick="window.location.reload()" class="tactical-btn tactical-btn--primary">Réessayer</button>
+    </div>
+</div>
 {% endblock %}

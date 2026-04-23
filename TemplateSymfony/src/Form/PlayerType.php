@@ -6,8 +6,10 @@ use App\Entity\Player;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -39,6 +41,34 @@ class PlayerType extends AbstractType
                 'label'   => 'Poste',
                 'choices' => Player::POSITIONS,
                 'constraints' => [new NotBlank()],
+            ])
+            ->add('status', ChoiceType::class, [
+                'label' => 'Statut',
+                'choices' => Player::STATUSES,
+                'constraints' => [new NotBlank()],
+            ])
+            ->add('statusReason', TextareaType::class, [
+                'label' => 'Motif absence / blessure',
+                'required' => false,
+                'attr' => [
+                    'placeholder' => 'Blessure, maladie, absence personnelle...',
+                    'rows' => 3,
+                ],
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'required' => false,
+                'attr' => ['placeholder' => 'joueur@example.com'],
+            ])
+            ->add('phone', TextType::class, [
+                'label' => 'Téléphone',
+                'required' => false,
+                'attr' => ['placeholder' => '06 12 34 56 78'],
+            ])
+            ->add('emergencyContact', TextType::class, [
+                'label' => 'Contact urgence',
+                'required' => false,
+                'attr' => ['placeholder' => 'Nom + téléphone'],
             ])
             ->add('strongFoot', ChoiceType::class, [
                 'label'    => 'Pied fort',

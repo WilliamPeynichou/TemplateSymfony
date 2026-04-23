@@ -4,45 +4,45 @@
 {% block javascripts %}{{ importmap('app') }}{% endblock %}
 
 {% block body %}
-<div class="auth-page">
-    <a href="{{ path('app_home') }}" class="auth-logo" title="Retour à l'accueil">Andfield</a>
-    <div class="auth-panel auth-panel--left">
-        <div class="auth-brand">
+<div class="tactical-auth-page">
+    <a href="{{ path('app_home') }}" class="tactical-auth-logo" title="Retour à l'accueil">And<span style="color:var(--secondary-container)">field</span></a>
+    <div class="tactical-auth-panel tactical-auth-panel--left grain-overlay">
+        <div class="tactical-auth-brand">
             Gérez votre <em>équipe</em> comme un pro.
         </div>
-        <p class="auth-tagline">
+        <p class="tactical-auth-tagline">
             Andfield vous donne tous les outils du coach moderne — composition tactique, instructions individuelles, gestion de l'effectif.
         </p>
     </div>
-    <div class="auth-panel auth-panel--right">
-        <h1 class="auth-form-title">Connexion</h1>
-        <p class="auth-form-sub">Accédez à votre espace coach.</p>
+    <div class="tactical-auth-panel tactical-auth-panel--right">
+        <h1 class="tactical-auth-form-title">Connexion</h1>
+        <p class="tactical-auth-form-sub">Accédez à votre espace coach.</p>
 
         {% if error %}
-            <div class="flash flash--error" style="margin-bottom:1.5rem;">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+            <div class="tactical-flash tactical-flash--error" style="margin-bottom:1.5rem;">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
         {% endif %}
 
         <form method="post" action="{{ path('app_login') }}">
-            <div class="form-group">
-                <label class="form-label" for="email">Email</label>
-                <input class="form-control" type="email" id="email" name="_username"
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="email">Email</label>
+                <input class="tactical-input" type="email" id="email" name="_username"
                        value="{{ last_username }}" autocomplete="email" autofocus
                        placeholder="coach@exemple.fr">
             </div>
-            <div class="form-group">
-                <label class="form-label" for="password">Mot de passe</label>
-                <input class="form-control" type="password" id="password" name="_password"
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="password">Mot de passe</label>
+                <input class="tactical-input" type="password" id="password" name="_password"
                        autocomplete="current-password" placeholder="••••••••">
             </div>
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-            <button class="btn btn--filled" type="submit" style="width:100%;justify-content:center;">
+            <button class="tactical-btn tactical-btn--primary" type="submit" style="width:100%;justify-content:center;">
                 Se connecter
             </button>
         </form>
 
-        <p style="margin-top:2rem;font-size:var(--text-sm);color:var(--stone-600);">
+        <p style="margin-top:2rem;font-size:var(--text-label-bold);color:var(--on-surface-variant);">
             Pas encore de compte ?
-            <a href="{{ path('app_register') }}" class="auth-link">Créer un compte</a>
+            <a href="{{ path('app_register') }}" class="tactical-auth-link">Créer un compte</a>
         </p>
     </div>
 </div>

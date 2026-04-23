@@ -17,7 +17,7 @@ export default class extends Controller {
 
     // ─── Restore server-rendered tokens ───────────────────────
     restoreServerRenderedTokens() {
-        this.playersTarget.querySelectorAll('.player-token').forEach(token => {
+        this.playersTarget.querySelectorAll('.tactical-player-token').forEach(token => {
             const playerId = parseInt(token.dataset.playerId);
             const posX     = parseFloat(token.style.left);
             const posY     = parseFloat(token.style.top);
@@ -39,18 +39,18 @@ export default class extends Controller {
     initDropZone() {
         this.wrapperTarget.addEventListener('dragover', (e) => {
             e.preventDefault();
-            this.wrapperTarget.classList.add('drag-over');
+            this.wrapperTarget.classList.add('tactical-drag-over');
         });
 
         this.wrapperTarget.addEventListener('dragleave', (e) => {
             if (!this.wrapperTarget.contains(e.relatedTarget)) {
-                this.wrapperTarget.classList.remove('drag-over');
+                this.wrapperTarget.classList.remove('tactical-drag-over');
             }
         });
 
         this.wrapperTarget.addEventListener('drop', (e) => {
             e.preventDefault();
-            this.wrapperTarget.classList.remove('drag-over');
+            this.wrapperTarget.classList.remove('tactical-drag-over');
 
             if (this.dragPlayerId === null) return;
 
@@ -103,22 +103,22 @@ export default class extends Controller {
         if (!entry) return;
 
         const token = document.createElement('div');
-        token.className = 'player-token';
+        token.className = 'tactical-player-token';
         token.dataset.playerId   = playerId;
         token.dataset.playerData = JSON.stringify(entry.data);
         token.draggable = true;
         token.style.left = entry.posX + '%';
         token.style.top  = entry.posY + '%';
         token.innerHTML = `
-            <div class="player-token__circle">${entry.data.number}</div>
-            <div class="player-token__name">${entry.data.lastName}</div>
+            <div class="tactical-player-token__circle">${entry.data.number}</div>
+            <div class="tactical-player-token__name">${entry.data.lastName}</div>
         `;
 
         this.bindTokenEvents(token, playerId);
         this.playersTarget.appendChild(token);
 
         if (this.selectedPlayerId === playerId) {
-            token.classList.add('player-token--selected');
+            token.classList.add('tactical-player-token--selected');
         }
     }
 
@@ -126,11 +126,11 @@ export default class extends Controller {
         token.addEventListener('dragstart', (e) => {
             this.dragSource   = 'pitch';
             this.dragPlayerId = parseInt(playerId);
-            token.classList.add('player-token--dragging');
+            token.classList.add('tactical-player-token--dragging');
             e.dataTransfer.effectAllowed = 'move';
         });
 
-        token.addEventListener('dragend', () => token.classList.remove('player-token--dragging'));
+        token.addEventListener('dragend', () => token.classList.remove('tactical-player-token--dragging'));
 
         token.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -142,12 +142,12 @@ export default class extends Controller {
     selectPlayer(playerId) {
         if (this.selectedPlayerId !== null) {
             const prev = this.playersTarget.querySelector(`[data-player-id="${this.selectedPlayerId}"]`);
-            if (prev) prev.classList.remove('player-token--selected');
+            if (prev) prev.classList.remove('tactical-player-token--selected');
         }
 
         this.selectedPlayerId = playerId;
         const token = this.playersTarget.querySelector(`[data-player-id="${playerId}"]`);
-        if (token) token.classList.add('player-token--selected');
+        if (token) token.classList.add('tactical-player-token--selected');
 
         const entry = this.positions.get(playerId);
         const data  = entry?.data ?? { id: playerId };
@@ -187,8 +187,8 @@ export default class extends Controller {
 
     // ─── Bench management ──────────────────────────────────────
     addToBench(data) {
-        // Remove "bench-all-placed" state if present
-        const emptyState = this.benchTarget.parentElement?.querySelector('.bench-all-placed');
+        // Remove "tactical-bench-all-placed" state if present
+        const emptyState = this.benchTarget.parentElement?.querySelector('.tactical-bench-all-placed');
         if (emptyState) emptyState.remove();
 
         // Determine position group
@@ -199,7 +199,7 @@ export default class extends Controller {
             : 'ATT';
 
         const el = document.createElement('div');
-        el.className = 'bench-card';
+        el.className = 'tactical-bench-card';
         el.draggable = true;
         el.dataset.playerId   = data.id;
         el.dataset.posGroup   = posGroup;
@@ -207,15 +207,15 @@ export default class extends Controller {
 
         const initials = (data.firstName?.[0] ?? '') + (data.lastName?.[0] ?? '');
         el.innerHTML = `
-            <div class="bench-card__avatar bench-card__avatar--${posGroup.toLowerCase()}">${initials}</div>
-            <div class="bench-card__info">
-                <div class="bench-card__name">${data.lastName}</div>
-                <div class="bench-card__meta">
-                    <span class="bench-card__num">#${data.number}</span>
-                    <span class="pos-badge pos-badge--${posGroup.toLowerCase()}">${data.position}</span>
+            <div class="tactical-bench-card__avatar tactical-bench-card__avatar--${posGroup.toLowerCase()}">${initials}</div>
+            <div class="tactical-bench-card__info">
+                <div class="tactical-bench-card__name">${data.lastName}</div>
+                <div class="tactical-bench-card__meta">
+                    <span class="tactical-bench-card__num">#${data.number}</span>
+                    <span class="tactical-chip-pos tactical-chip-pos--${posGroup.toLowerCase()}">${data.position}</span>
                 </div>
             </div>
-            <div class="bench-card__drag">⣿</div>
+            <div class="tactical-bench-card__drag">⣿</div>
         `;
 
         this.initBenchPlayerDrag(el);
@@ -224,21 +224,21 @@ export default class extends Controller {
     }
 
     initBenchPlayersDrag() {
-        this.benchTarget.querySelectorAll('.bench-card').forEach(el => this.initBenchPlayerDrag(el));
+        this.benchTarget.querySelectorAll('.tactical-bench-card').forEach(el => this.initBenchPlayerDrag(el));
     }
 
     initBenchPlayerDrag(el) {
         el.addEventListener('dragstart', (e) => {
             this.dragSource   = 'bench';
             this.dragPlayerId = parseInt(el.dataset.playerId);
-            el.classList.add('bench-card--dragging');
+            el.classList.add('tactical-bench-card--dragging');
             e.dataTransfer.effectAllowed = 'move';
         });
-        el.addEventListener('dragend', () => el.classList.remove('bench-card--dragging'));
+        el.addEventListener('dragend', () => el.classList.remove('tactical-bench-card--dragging'));
     }
 
     syncBenchCount() {
-        const count = this.benchTarget.querySelectorAll('.bench-card').length;
+        const count = this.benchTarget.querySelectorAll('.tactical-bench-card').length;
         // Find sidebar controller's benchCount target
         const countEl = this.element.querySelector('[data-sidebar-target="benchCount"]');
         if (countEl) countEl.textContent = count;
@@ -273,14 +273,14 @@ export default class extends Controller {
     setSaveIndicator(state) {
         if (!this.hasSaveIndicatorTarget) return;
         const el = this.saveIndicatorTarget;
-        el.classList.remove('save-indicator--saving', 'save-indicator--saved');
+        el.classList.remove('tactical-save-indicator--saving', 'tactical-save-indicator--saved');
         if (state === 'saving') {
             el.textContent = 'Sauvegarde…';
-            el.classList.add('save-indicator--saving');
+            el.classList.add('tactical-save-indicator--saving');
         } else if (state === 'saved') {
             el.textContent = 'Sauvegardé ✓';
-            el.classList.add('save-indicator--saved');
-            setTimeout(() => { el.textContent = ''; el.classList.remove('save-indicator--saved'); }, 2000);
+            el.classList.add('tactical-save-indicator--saved');
+            setTimeout(() => { el.textContent = ''; el.classList.remove('tactical-save-indicator--saved'); }, 2000);
         } else {
             el.textContent = 'Erreur';
         }

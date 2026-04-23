@@ -2,23 +2,23 @@
 {% block title %}Nouvelle note post-match{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="tactical-page-header">
     <div>
-        <h1 class="page-header__title">Nouvelle note post-match</h1>
-        <p class="page-header__sub">{{ team.name }}</p>
+        <h1 class="tactical-page-header__title">Nouvelle note post-match</h1>
+        <p class="tactical-page-header__sub">{{ team.name }}</p>
     </div>
-    <a href="{{ path('app_match_note_index', {teamId: team.id}) }}" class="btn">← Retour</a>
+    <a href="{{ path('app_match_note_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">← Retour</a>
 </div>
 
-<div class="page-body">
-    <div class="card" style="max-width:640px;">
+<div class="tactical-page-body">
+    <div class="tactical-form-card" style="max-width:640px;">
         {{ form_start(form) }}
-            <div class="form-group">{{ form_row(form.matchLabel) }}</div>
-            <div class="form-group">{{ form_row(form.matchDate) }}</div>
-            <div class="form-group">{{ form_row(form.content) }}</div>
+            <div class="tactical-form-group">{{ form_row(form.matchLabel) }}</div>
+            <div class="tactical-form-group">{{ form_row(form.matchDate) }}</div>
+            <div class="tactical-form-group">{{ form_row(form.content) }}</div>
             <div style="display:flex;gap:1rem;margin-top:1.5rem;">
-                <button type="submit" class="btn btn--filled">Enregistrer</button>
-                <a href="{{ path('app_match_note_index', {teamId: team.id}) }}" class="btn">Annuler</a>
+                <button type="submit" class="tactical-btn tactical-btn--primary">Enregistrer</button>
+                <a href="{{ path('app_match_note_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">Annuler</a>
             </div>
         {{ form_end(form) }}
     </div>

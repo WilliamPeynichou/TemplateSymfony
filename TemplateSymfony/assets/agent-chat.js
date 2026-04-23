@@ -42,15 +42,15 @@ async function parseApiResponse(response) {
 
 // ─── OUVERTURE / FERMETURE ───────────────────────────────────────────────────
 function openSidebar() {
-    sidebar.classList.add('open');
-    overlay.classList.add('open');
+    sidebar.classList.add('tactical-open');
+    overlay.classList.add('tactical-open');
     input.focus();
     loadConversations();
 }
 
 function closeSidebar() {
-    sidebar.classList.remove('open');
-    overlay.classList.remove('open');
+    sidebar.classList.remove('tactical-open');
+    overlay.classList.remove('tactical-open');
 }
 
 fab.addEventListener('click', openSidebar);
@@ -61,7 +61,7 @@ overlay.addEventListener('click', closeSidebar);
 modeToggle.addEventListener('change', () => {
     validationMode = modeToggle.checked ? 'auto' : 'singular';
     modeLabel.textContent = modeToggle.checked ? 'Mode auto' : 'Mode manuel';
-    modeLabel.closest('.agent-mode-toggle').classList.toggle('auto-on', modeToggle.checked);
+    modeLabel.closest('.tactical-agent-mode-toggle').classList.toggle('tactical-auto-on', modeToggle.checked);
 });
 
 // ─── CONVERSATIONS ───────────────────────────────────────────────────────────
@@ -80,19 +80,19 @@ function renderConvBar(convs) {
     convBar.innerHTML = '';
 
     const newBtn = document.createElement('button');
-    newBtn.className   = 'agent-conv-new';
+    newBtn.className   = 'tactical-agent-conv-new';
     newBtn.textContent = '+ Nouveau';
     newBtn.addEventListener('click', () => {
         currentConversationId = null;
         messages.innerHTML = '';
         pendingAction = null;
-        document.querySelectorAll('.agent-conv-chip').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tactical-agent-conv-chip').forEach(c => c.classList.remove('active'));
     });
     convBar.appendChild(newBtn);
 
     convs.forEach(conv => {
         const chip = document.createElement('button');
-        chip.className   = 'agent-conv-chip' + (conv.id === currentConversationId ? ' active' : '');
+        chip.className   = 'tactical-agent-conv-chip' + (conv.id === currentConversationId ? ' tactical-active' : '');
         chip.dataset.id  = String(conv.id);
         chip.textContent = conv.title || `Conv. #${conv.id}`;
         chip.title       = conv.title;
@@ -106,8 +106,8 @@ async function loadConversation(convId) {
     messages.innerHTML    = '';
     pendingAction         = null;
 
-    document.querySelectorAll('.agent-conv-chip').forEach(c => {
-        c.classList.toggle('active', parseInt(c.dataset.id) === convId);
+    document.querySelectorAll('.tactical-agent-conv-chip').forEach(c => {
+        c.classList.toggle('tactical-active', parseInt(c.dataset.id) === convId);
     });
 
     try {
@@ -159,7 +159,7 @@ async function sendMessage(text, confirmAction = null) {
         const data = await parseApiResponse(res);
 
         if (!data.success) {
-            appendMessage('assistant', `⚠️ Erreur : ${data.error || 'inconnue'}`);
+            appendMessage('assistant', `Erreur : ${data.error || 'inconnue'}`);
             return;
         }
 
@@ -177,7 +177,7 @@ async function sendMessage(text, confirmAction = null) {
 
     } catch (e) {
         console.error('[Agent] Erreur:', e);
-        appendMessage('assistant', `⚠️ Erreur: ${e.message || e}`);
+        appendMessage('assistant', `Erreur: ${e.message || e}`);
     } finally {
         setLoading(false);
         scrollToBottom();
@@ -211,10 +211,10 @@ function autoResizeInput() {
 // ─── RENDU DES MESSAGES ──────────────────────────────────────────────────────
 function appendMessage(role, content) {
     const wrapper = document.createElement('div');
-    wrapper.className = `agent-message agent-message--${role}`;
+    wrapper.className = `tactical-agent-message tactical-agent-message--${role}`;
 
     const bubble = document.createElement('div');
-    bubble.className = 'agent-bubble';
+    bubble.className = 'tactical-agent-bubble';
     bubble.textContent = content;
 
     wrapper.appendChild(bubble);
@@ -225,11 +225,11 @@ function appendMessage(role, content) {
 function appendActionCard(action) {
     const formatted = formatPendingAction(action);
     const card = document.createElement('div');
-    card.className = 'agent-action-card';
+    card.className = 'tactical-agent-action-card';
 
     const label = document.createElement('div');
-    label.className = 'agent-action-card__label';
-    label.textContent = '⚡ Action en attente de validation';
+    label.className = 'tactical-agent-action-card__label';
+    label.textContent = 'Action en attente de validation';
     card.appendChild(label);
 
     const toolNameRow = document.createElement('div');
@@ -246,12 +246,12 @@ function appendActionCard(action) {
     card.appendChild(argsPreview);
 
     const btns = document.createElement('div');
-    btns.className = 'agent-action-card__btns';
+    btns.className = 'tactical-agent-action-card__btns';
     const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'btn-confirm';
+    confirmBtn.className = 'tactical-agent-confirm-btn';
     confirmBtn.textContent = '✓ Confirmer';
     const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'btn-cancel';
+    cancelBtn.className = 'tactical-agent-cancel-btn';
     cancelBtn.textContent = '✕ Annuler';
     btns.appendChild(confirmBtn);
     btns.appendChild(cancelBtn);
@@ -280,15 +280,15 @@ function appendActionCard(action) {
 function setLoading(state) {
     isLoading = state;
     sendBtn.disabled = state;
-    dot.className = 'agent-header__dot' + (state ? ' loading' : '');
+    dot.className = 'tactical-agent-header__dot' + (state ? ' tactical-loading' : '');
 
     // Indicateur de frappe
     const existing = document.getElementById('agent-typing-indicator');
     if (state && !existing) {
         const typing = document.createElement('div');
         typing.id = 'agent-typing-indicator';
-        typing.className = 'agent-message agent-message--assistant';
-        typing.innerHTML = '<div class="agent-bubble agent-typing"><span></span><span></span><span></span></div>';
+        typing.className = 'tactical-agent-message tactical-agent-message--assistant';
+        typing.innerHTML = '<div class="tactical-agent-bubble tactical-agent-typing"><span></span><span></span><span></span></div>';
         messages.appendChild(typing);
         scrollToBottom();
     } else if (!state && existing) {

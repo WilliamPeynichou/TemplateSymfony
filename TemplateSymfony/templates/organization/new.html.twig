@@ -1,11 +1,22 @@
 {% extends 'layout/app.html.twig' %}
 {% block title %}Nouvelle organisation{% endblock %}
 {% block content %}
-    <h1>Nouvelle organisation</h1>
-    <form method="post">
-        <label>Nom
-            <input name="name" required>
-        </label>
-        <button type="submit">Créer</button>
-    </form>
+<div class="tactical-page-header">
+    <h1 class="tactical-page-header__title">Nouvelle <em>organisation</em></h1>
+    <a href="{{ path('app_organization_index') }}" class="tactical-btn tactical-btn--outline">← Retour</a>
+</div>
+<div class="tactical-page-body">
+    <div class="tactical-form-card">
+        <form method="post">
+            <div class="tactical-form-group">
+                <label class="tactical-form-label">Nom de l'organisation</label>
+                <input class="tactical-input" name="name" required placeholder="Mon Club FC">
+            </div>
+            <div class="tactical-form-actions">
+                <button type="submit" class="tactical-btn tactical-btn--primary">Créer</button>
+                <a href="{{ path('app_organization_index') }}" class="tactical-btn tactical-btn--outline">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

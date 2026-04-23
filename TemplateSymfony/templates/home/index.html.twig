@@ -2,10 +2,6 @@
 
 {% block title %}Andfield — La plateforme coaching moderne{% endblock %}
 
-{% block stylesheets %}
-    <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
-{% endblock %}
-
 {% block javascripts %}
     {{ importmap('home') }}
 {% endblock %}
@@ -45,9 +41,9 @@
 
 {% block body %}
 
-<nav class="nav" id="nav">
-    <a href="/" class="nav__logo">Andfield</a>
-    <ul class="nav__links">
+<nav class="tactical-nav" id="tactical-nav">
+    <a href="/" class="tactical-nav__logo">Andfield</a>
+    <ul class="tactical-nav__links">
         <li><a href="#fonctionnalites">Fonctionnalités</a></li>
         <li><a href="#ia-coach">IA Coach</a></li>
         <li><a href="#comment">Comment ça marche</a></li>
@@ -55,73 +51,73 @@
         <li><a href="#faq">FAQ</a></li>
     </ul>
     {% if app.user %}
-        <a href="{{ path('app_team_index') }}" class="nav__cta">Mon espace coach</a>
+        <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--primary">Mon espace coach</a>
     {% else %}
-        <a href="{{ path('app_login') }}" class="nav__cta">Se connecter</a>
+        <a href="{{ path('app_login') }}" class="tactical-btn tactical-btn--primary">Se connecter</a>
     {% endif %}
 </nav>
 
-<section class="hero grain-overlay">
+<section class="tactical-hero grain-overlay">
     <div class="container">
-        <div class="hero__left">
-            <span class="hero__tag reveal">Plateforme coaching · Football</span>
-            <h1 class="hero__title reveal reveal-delay-1">
+        <div class="tactical-hero__left">
+            <span class="tactical-hero__tag reveal">Plateforme coaching · Football</span>
+            <h1 class="tactical-hero__title reveal reveal-delay-1">
                 <span class="line">Le stack</span><br>
                 <span class="line"><em>complet</em></span><br>
                 <span class="line">du coach.</span>
             </h1>
         </div>
-        <div class="hero__right">
-            <p class="hero__subtitle reveal reveal-delay-2">
+        <div class="tactical-hero__right">
+            <p class="tactical-hero__subtitle reveal reveal-delay-2">
                 Composition sur terrain interactif, fiches joueurs, notes de match, statistiques, calendrier, rapports PDF
                 et un <strong>assistant IA</strong> qui connaît votre effectif — dans un seul espace coach.
             </p>
-            <div class="hero__actions reveal reveal-delay-3">
+            <div class="tactical-hero__actions reveal reveal-delay-3">
                 {% if app.user %}
-                    <a href="{{ path('app_team_index') }}" class="btn-primary">Ouvrir mon espace coach</a>
-                    <a href="#fonctionnalites" class="btn-ghost">Voir les nouveautés</a>
+                    <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--primary">Ouvrir mon espace coach</a>
+                    <a href="#fonctionnalites" class="tactical-btn tactical-btn--ghost">Voir les nouveautés</a>
                 {% else %}
-                    <a href="{{ path('app_register') }}" class="btn-primary">Commencer gratuitement</a>
-                    <a href="#fonctionnalites" class="btn-ghost">Voir les fonctionnalités</a>
+                    <a href="{{ path('app_register') }}" class="tactical-btn tactical-btn--primary">Commencer gratuitement</a>
+                    <a href="#fonctionnalites" class="tactical-btn tactical-btn--ghost">Voir les fonctionnalités</a>
                 {% endif %}
             </div>
-            <div class="hero__trust reveal reveal-delay-3">
+            <div class="tactical-hero__trust reveal reveal-delay-3">
                 <span>Sans CB</span>
-                <span class="dot"></span>
+                <span class="tactical-trust-dot"></span>
                 <span>Plan Free permanent</span>
-                <span class="dot"></span>
+                <span class="tactical-trust-dot"></span>
                 <span>Self-host possible</span>
             </div>
         </div>
     </div>
 </section>
 
-<div class="stats">
+<div class="tactical-stats">
     <div class="container">
-        <div class="stat-item reveal">
-            <span class="stat-number">12<span class="stat-unit">+</span></span>
-            <span class="stat-label">Modules intégrés</span>
+        <div class="tactical-stat-item reveal">
+            <span class="tactical-stat-number">12<span class="tactical-stat-unit">+</span></span>
+            <span class="tactical-stat-label">Modules intégrés</span>
         </div>
-        <div class="stat-item reveal reveal-delay-1">
-            <span class="stat-number">IA</span>
-            <span class="stat-label">Coach sémantique · RAG</span>
+        <div class="tactical-stat-item reveal reveal-delay-1">
+            <span class="tactical-stat-number">IA</span>
+            <span class="tactical-stat-label">Coach sémantique · RAG</span>
         </div>
-        <div class="stat-item reveal reveal-delay-2">
-            <span class="stat-number">PWA</span>
-            <span class="stat-label">Installable, hors-ligne</span>
+        <div class="tactical-stat-item reveal reveal-delay-2">
+            <span class="tactical-stat-number">PWA</span>
+            <span class="tactical-stat-label">Installable, hors-ligne</span>
         </div>
-        <div class="stat-item reveal reveal-delay-3">
-            <span class="stat-number">API</span>
-            <span class="stat-label">REST publique</span>
+        <div class="tactical-stat-item reveal reveal-delay-3">
+            <span class="tactical-stat-number">API</span>
+            <span class="tactical-stat-label">REST publique</span>
         </div>
     </div>
 </div>
 
-<section class="pillars" id="fonctionnalites">
+<section class="tactical-pillars" id="fonctionnalites">
     <div class="container">
-        <div class="services__header">
+        <div class="tactical-section-header">
             <div>
-                <span class="section-label reveal">Fonctionnalités</span>
+                <span class="tactical-section-label reveal">Fonctionnalités</span>
                 <h2 class="reveal reveal-delay-1">Tout ce qu'un coach utilise <em>chaque semaine.</em></h2>
             </div>
             <p class="reveal reveal-delay-2">
@@ -130,104 +126,104 @@
             </p>
         </div>
 
-        <div class="pillars__grid">
+        <div class="tactical-pillars__grid">
 
-            <article class="feature-card feature-card--lg reveal">
-                <div class="feature-card__icon">{{ ui.icon('pitch') }}</div>
-                <span class="feature-card__badge">Core</span>
+            <article class="tactical-feature-card tactical-feature-card--lg reveal">
+                <div class="tactical-feature-card__icon">{{ ui.icon('pitch') }}</div>
+                <span class="tactical-feature-card__badge">Core</span>
                 <h3>Terrain tactique interactif</h3>
                 <p>
                     Terrain fidèle, positionnement drag &amp; drop, sauvegarde auto. Construisez vos compositions
                     comme sur un tableau — mais en ligne et modifiables à l'infini.
                 </p>
-                <ul class="feature-card__list">
+                <ul class="tactical-feature-card__list">
                     <li>Schémas 4-3-3, 4-4-2, 3-5-2, libre</li>
                     <li>Instructions individuelles au clic</li>
                     <li>Plusieurs compositions par équipe</li>
                 </ul>
             </article>
 
-            <article class="feature-card reveal reveal-delay-1">
-                <div class="feature-card__icon">{{ ui.icon('users') }}</div>
-                <span class="feature-card__badge">Core</span>
+            <article class="tactical-feature-card reveal reveal-delay-1">
+                <div class="tactical-feature-card__icon">{{ ui.icon('users') }}</div>
+                <span class="tactical-feature-card__badge">Core</span>
                 <h3>Fiches joueurs complètes</h3>
                 <p>Numéro, poste, pied fort, taille, poids, date de naissance, photo — tout l'effectif en un coup d'œil.</p>
             </article>
 
-            <article class="feature-card reveal reveal-delay-2">
-                <div class="feature-card__icon">{{ ui.icon('note') }}</div>
-                <span class="feature-card__badge">Core</span>
+            <article class="tactical-feature-card reveal reveal-delay-2">
+                <div class="tactical-feature-card__icon">{{ ui.icon('note') }}</div>
+                <span class="tactical-feature-card__badge">Core</span>
                 <h3>Notes de match</h3>
                 <p>Notation joueur par joueur, commentaires, moments clés. Historique consultable en un clic.</p>
             </article>
 
-            <article class="feature-card feature-card--accent reveal" id="ia-coach-card">
-                <div class="feature-card__icon">{{ ui.icon('sparkles') }}</div>
-                <span class="feature-card__badge feature-card__badge--brand">IA · RAG</span>
+            <article class="tactical-feature-card tactical-feature-card--accent reveal" id="ia-coach-card">
+                <div class="tactical-feature-card__icon">{{ ui.icon('sparkles') }}</div>
+                <span class="tactical-feature-card__badge tactical-feature-card__badge--brand">IA · RAG</span>
                 <h3>Assistant IA Coach</h3>
                 <p>
                     Un agent IA connecté à votre effectif. Il lit vos notes, vos stats, votre calendrier et répond
                     en langage naturel — en s'appuyant sur <em>vos données</em>.
                 </p>
-                <ul class="feature-card__list">
+                <ul class="tactical-feature-card__list">
                     <li>Recherche sémantique sur vos notes (RAG)</li>
                     <li>Tools : effectif, stats, calendrier</li>
                     <li>Suggestions proactives hebdomadaires</li>
                 </ul>
             </article>
 
-            <article class="feature-card reveal reveal-delay-1">
-                <div class="feature-card__icon">{{ ui.icon('chart') }}</div>
-                <span class="feature-card__badge">Data</span>
+            <article class="tactical-feature-card reveal reveal-delay-1">
+                <div class="tactical-feature-card__icon">{{ ui.icon('chart') }}</div>
+                <span class="tactical-feature-card__badge">Data</span>
                 <h3>Statistiques joueurs</h3>
                 <p>Buts, passes, notes, minutes jouées. Agrégation saison, comparatifs, tendances.</p>
             </article>
 
-            <article class="feature-card reveal reveal-delay-2">
-                <div class="feature-card__icon">{{ ui.icon('calendar') }}</div>
-                <span class="feature-card__badge">Agenda</span>
+            <article class="tactical-feature-card reveal reveal-delay-2">
+                <div class="tactical-feature-card__icon">{{ ui.icon('calendar') }}</div>
+                <span class="tactical-feature-card__badge">Agenda</span>
                 <h3>Calendrier &amp; entraînements</h3>
                 <p>Matchs et séances. Export iCalendar (ICS) compatible Google / Apple / Outlook.</p>
             </article>
 
-            <article class="feature-card reveal">
-                <div class="feature-card__icon">{{ ui.icon('file') }}</div>
-                <span class="feature-card__badge">Reporting</span>
+            <article class="tactical-feature-card reveal">
+                <div class="tactical-feature-card__icon">{{ ui.icon('file') }}</div>
+                <span class="tactical-feature-card__badge">Reporting</span>
                 <h3>Rapports PDF de saison</h3>
                 <p>Synthèse par joueur et par équipe, PDF prêt à partager au staff, au président ou aux familles.</p>
             </article>
 
-            <article class="feature-card reveal reveal-delay-1">
-                <div class="feature-card__icon">{{ ui.icon('download') }}</div>
-                <span class="feature-card__badge">Exports</span>
+            <article class="tactical-feature-card reveal reveal-delay-1">
+                <div class="tactical-feature-card__icon">{{ ui.icon('download') }}</div>
+                <span class="tactical-feature-card__badge">Exports</span>
                 <h3>Exports CSV</h3>
                 <p>Effectif, stats agrégées, convocations — exportables pour vos tableurs et outils tiers.</p>
             </article>
 
-            <article class="feature-card reveal reveal-delay-2">
-                <div class="feature-card__icon">{{ ui.icon('building') }}</div>
-                <span class="feature-card__badge">Club</span>
+            <article class="tactical-feature-card reveal reveal-delay-2">
+                <div class="tactical-feature-card__icon">{{ ui.icon('building') }}</div>
+                <span class="tactical-feature-card__badge">Club</span>
                 <h3>Multi-organisation</h3>
                 <p>Plusieurs coachs dans un même club. Invitations email, rôles, cloisonnement strict des équipes.</p>
             </article>
 
-            <article class="feature-card reveal">
-                <div class="feature-card__icon">{{ ui.icon('phone') }}</div>
-                <span class="feature-card__badge">Mobile</span>
+            <article class="tactical-feature-card reveal">
+                <div class="tactical-feature-card__icon">{{ ui.icon('phone') }}</div>
+                <span class="tactical-feature-card__badge">Mobile</span>
                 <h3>PWA installable</h3>
                 <p>Installez Andfield sur votre téléphone. Icône d'app, écran de démarrage, mode hors-ligne.</p>
             </article>
 
-            <article class="feature-card reveal reveal-delay-1">
-                <div class="feature-card__icon">{{ ui.icon('mail') }}</div>
-                <span class="feature-card__badge">Comm.</span>
+            <article class="tactical-feature-card reveal reveal-delay-1">
+                <div class="tactical-feature-card__icon">{{ ui.icon('mail') }}</div>
+                <span class="tactical-feature-card__badge">Comm.</span>
                 <h3>Emails transactionnels</h3>
                 <p>Bienvenue, reset mot de passe, invitations club, résumés hebdos — HTML propre, templatés.</p>
             </article>
 
-            <article class="feature-card reveal reveal-delay-2">
-                <div class="feature-card__icon">{{ ui.icon('plug') }}</div>
-                <span class="feature-card__badge">Dev</span>
+            <article class="tactical-feature-card reveal reveal-delay-2">
+                <div class="tactical-feature-card__icon">{{ ui.icon('plug') }}</div>
+                <span class="tactical-feature-card__badge">Dev</span>
                 <h3>API publique REST</h3>
                 <p>Clés d'API, endpoints équipes / joueurs / stats. Intégrez Andfield à vos outils maison.</p>
             </article>
@@ -236,10 +232,10 @@
     </div>
 </section>
 
-<section class="ia-showcase grain-overlay" id="ia-coach">
-    <div class="container ia-showcase__inner">
-        <div class="ia-showcase__text">
-            <span class="section-label reveal" style="color: var(--brand-light);">Nouveau · Assistant IA</span>
+<section class="tactical-ia-showcase grain-overlay" id="ia-coach">
+    <div class="container tactical-ia-showcase__inner">
+        <div class="tactical-ia-showcase__text">
+            <span class="tactical-section-label reveal" style="color:var(--secondary-container);">Nouveau · Assistant IA</span>
             <h2 class="reveal reveal-delay-1">
                 Un coach adjoint qui <em>connaît</em><br>vraiment votre équipe.
             </h2>
@@ -248,34 +244,34 @@
                 Il indexe sémantiquement chacune de vos notes de match, stats et événements, puis
                 répond en s'appuyant sur <em>vos données</em> — pas des généralités.
             </p>
-            <ul class="ia-showcase__bullets reveal reveal-delay-3">
+            <ul class="tactical-ia-showcase__bullets reveal reveal-delay-3">
                 <li><strong>Embeddings locaux</strong> (Ollama · nomic-embed-text) ou OpenAI, au choix.</li>
                 <li><strong>LLM local par défaut</strong> : Qwen3 1.7B via Ollama, aucune donnée ne sort.</li>
                 <li><strong>Tools agent</strong> : effectif, stats joueurs, calendrier, notes de match.</li>
                 <li><strong>Suggestions hebdos</strong> dispatchées par Messenger + email.</li>
             </ul>
         </div>
-        <aside class="ia-showcase__chat reveal reveal-delay-2" aria-hidden="true">
-            <div class="chat-mock">
-                <div class="chat-mock__header">
-                    <span class="chat-mock__dot"></span>
-                    <span class="chat-mock__dot chat-mock__dot--mid"></span>
-                    <span class="chat-mock__dot chat-mock__dot--far"></span>
-                    <span class="chat-mock__title">Andfield — IA Coach</span>
+        <aside class="tactical-ia-showcase__chat reveal reveal-delay-2" aria-hidden="true">
+            <div class="tactical-chat-mock">
+                <div class="tactical-chat-mock__header">
+                    <span class="tactical-chat-mock__dot"></span>
+                    <span class="tactical-chat-mock__dot tactical-chat-mock__dot--mid"></span>
+                    <span class="tactical-chat-mock__dot tactical-chat-mock__dot--far"></span>
+                    <span class="tactical-chat-mock__title">Andfield — IA Coach</span>
                 </div>
-                <div class="chat-mock__body">
-                    <div class="chat-mock__msg chat-mock__msg--user">
+                <div class="tactical-chat-mock__body">
+                    <div class="tactical-chat-mock__msg tactical-chat-mock__msg--user">
                         Quel joueur est le plus régulier sur les 5 derniers matchs ?
                     </div>
-                    <div class="chat-mock__msg chat-mock__msg--bot">
+                    <div class="tactical-chat-mock__msg tactical-chat-mock__msg--bot">
                         <strong>Lucas M.</strong> — moyenne de note&nbsp;<strong>7,4 / 10</strong>,
                         écart-type 0,6. Noté sur les 5 matchs, au même poste (MC).
-                        <span class="chat-mock__ref">Sources : 5 notes de match · RAG</span>
+                        <span class="tactical-chat-mock__ref">Sources : 5 notes de match · RAG</span>
                     </div>
-                    <div class="chat-mock__msg chat-mock__msg--user">
+                    <div class="tactical-chat-mock__msg tactical-chat-mock__msg--user">
                         Propose un exercice pour nos transitions.
                     </div>
-                    <div class="chat-mock__msg chat-mock__msg--bot chat-mock__msg--typing">
+                    <div class="tactical-chat-mock__msg tactical-chat-mock__msg--bot tactical-chat-mock__msg--typing">
                         <span></span><span></span><span></span>
                     </div>
                 </div>
@@ -284,39 +280,39 @@
     </div>
 </section>
 
-<section class="approach" id="comment">
-    <div class="container split-layout">
-        <div class="aside-sticky">
-            <span class="section-label reveal">Comment ça marche</span>
+<section class="tactical-approach" id="comment">
+    <div class="container tactical-split-layout">
+        <div class="tactical-aside-sticky">
+            <span class="tactical-section-label reveal">Comment ça marche</span>
             <h2 class="reveal reveal-delay-1">Opérationnel en <em>moins de 10 minutes.</em></h2>
-            <p class="reveal reveal-delay-2" style="margin-top:1rem;color:var(--stone-600);max-width:42ch;">
+            <p class="reveal reveal-delay-2" style="margin-top:1rem;color:var(--on-surface-variant);max-width:42ch;">
                 Pas de setup complexe. Créez votre compte, ajoutez vos joueurs, et vous êtes prêt pour le prochain match.
             </p>
         </div>
-        <ul class="approach-list">
-            <li class="approach-item reveal">
-                <span class="approach-number">01</span>
+        <ul class="tactical-approach-list">
+            <li class="tactical-approach-item reveal">
+                <span class="tactical-approach-number">01</span>
                 <div>
                     <h3>Créez votre équipe (ou rejoignez un club)</h3>
                     <p>Nom, saison, catégorie. Invitez d'autres coachs dans votre organisation si besoin.</p>
                 </div>
             </li>
-            <li class="approach-item reveal reveal-delay-1">
-                <span class="approach-number">02</span>
+            <li class="tactical-approach-item reveal reveal-delay-1">
+                <span class="tactical-approach-number">02</span>
                 <div>
                     <h3>Constituez votre effectif</h3>
                     <p>Fiches joueurs complètes. Import via API ou création manuelle.</p>
                 </div>
             </li>
-            <li class="approach-item reveal reveal-delay-2">
-                <span class="approach-number">03</span>
+            <li class="tactical-approach-item reveal reveal-delay-2">
+                <span class="tactical-approach-number">03</span>
                 <div>
                     <h3>Préparez le match</h3>
                     <p>Composition sur terrain, instructions individuelles, convocation exportable.</p>
                 </div>
             </li>
-            <li class="approach-item reveal reveal-delay-3">
-                <span class="approach-number">04</span>
+            <li class="tactical-approach-item reveal reveal-delay-3">
+                <span class="tactical-approach-number">04</span>
                 <div>
                     <h3>Débriefez &amp; capitalisez</h3>
                     <p>Notes de match, stats, rapports PDF. L'IA relit tout et vous suggère des axes.</p>
@@ -326,22 +322,22 @@
     </div>
 </section>
 
-<section class="pricing-preview" id="pricing-preview">
+<section class="tactical-pricing-preview" id="pricing-preview">
     <div class="container">
-        <div class="services__header">
+        <div class="tactical-section-header">
             <div>
-                <span class="section-label reveal">Tarifs</span>
+                <span class="tactical-section-label reveal">Tarifs</span>
                 <h2 class="reveal reveal-delay-1">Simples, <em>sans surprise.</em></h2>
             </div>
             <p class="reveal reveal-delay-2">
                 Commencez gratuitement. Payez quand vous dépassez les usages amateurs.
             </p>
         </div>
-        <div class="plans-grid">
-            <article class="plan-card reveal">
+        <div class="tactical-plans-grid">
+            <article class="tactical-plan-card reveal">
                 <header>
                     <h3>Free</h3>
-                    <span class="plan-card__price">0€<span>/mois</span></span>
+                    <span class="tactical-plan-card__price">0€<span>/mois</span></span>
                 </header>
                 <ul>
                     <li>1 équipe</li>
@@ -349,13 +345,13 @@
                     <li>Notes de match</li>
                     <li>IA Coach (quota)</li>
                 </ul>
-                <a href="{{ path('app_register') }}" class="btn-ghost">Commencer</a>
+                <a href="{{ path('app_register') }}" class="tactical-btn tactical-btn--ghost">Commencer</a>
             </article>
-            <article class="plan-card plan-card--featured reveal reveal-delay-1">
-                <span class="plan-card__flag">Recommandé</span>
+            <article class="tactical-plan-card tactical-plan-card--featured reveal reveal-delay-1">
+                <span class="tactical-plan-card__flag">Recommandé</span>
                 <header>
                     <h3>Club</h3>
-                    <span class="plan-card__price">9€<span>/mois</span></span>
+                    <span class="tactical-plan-card__price">9€<span>/mois</span></span>
                 </header>
                 <ul>
                     <li>Équipes illimitées</li>
@@ -364,12 +360,12 @@
                     <li>IA Coach sans limite</li>
                     <li>Emails transactionnels</li>
                 </ul>
-                <a href="{{ path('app_pricing') }}" class="btn-primary">Voir les détails</a>
+                <a href="{{ path('app_pricing') }}" class="tactical-btn tactical-btn--primary">Voir les détails</a>
             </article>
-            <article class="plan-card reveal reveal-delay-2">
+            <article class="tactical-plan-card reveal reveal-delay-2">
                 <header>
                     <h3>Club+</h3>
-                    <span class="plan-card__price">29€<span>/mois</span></span>
+                    <span class="tactical-plan-card__price">29€<span>/mois</span></span>
                 </header>
                 <ul>
                     <li>Tout du plan Club</li>
@@ -377,52 +373,52 @@
                     <li>API publique + clés dédiées</li>
                     <li>Priorité support</li>
                 </ul>
-                <a href="{{ path('app_pricing') }}" class="btn-ghost">Détails</a>
+                <a href="{{ path('app_pricing') }}" class="tactical-btn tactical-btn--ghost">Détails</a>
             </article>
         </div>
-        <p class="pricing-preview__note reveal">
+        <p class="tactical-pricing-preview__note reveal">
             Auto-hébergement possible gratuitement (licence open-source) — voir la documentation.
         </p>
     </div>
 </section>
 
-<section class="faq" id="faq">
+<section class="tactical-faq" id="faq">
     <div class="container">
-        <div class="services__header">
+        <div class="tactical-section-header">
             <div>
-                <span class="section-label reveal">FAQ</span>
+                <span class="tactical-section-label reveal">FAQ</span>
                 <h2 class="reveal reveal-delay-1">Les questions <em>qu'on nous pose.</em></h2>
             </div>
         </div>
-        <div class="faq__list">
-            <details class="faq__item reveal" open>
+        <div class="tactical-faq__list">
+            <details class="tactical-faq__item reveal" open>
                 <summary>Mes données partent-elles chez OpenAI ou Google ?</summary>
                 <p>
                     Non par défaut. L'IA Coach tourne localement (Ollama + Qwen3) et les embeddings aussi
                     (nomic-embed-text). Vous pouvez basculer sur OpenAI au choix, via une variable d'env.
                 </p>
             </details>
-            <details class="faq__item reveal reveal-delay-1">
+            <details class="tactical-faq__item reveal reveal-delay-1">
                 <summary>Comment l'IA connaît-elle mon effectif ?</summary>
                 <p>
                     Chaque note de match, stat ou événement est <strong>indexé sémantiquement</strong> dans une base
                     vectorielle dédiée à votre compte. L'agent récupère les bons extraits avant de répondre (RAG).
                 </p>
             </details>
-            <details class="faq__item reveal reveal-delay-2">
+            <details class="tactical-faq__item reveal reveal-delay-2">
                 <summary>Puis-je utiliser Andfield depuis mon téléphone ?</summary>
                 <p>
                     Oui. Andfield est une <strong>PWA</strong> — installable sur iPhone ou Android, avec icône et mode hors-ligne.
                 </p>
             </details>
-            <details class="faq__item reveal reveal-delay-3">
+            <details class="tactical-faq__item reveal reveal-delay-3">
                 <summary>Puis-je exporter mes données ?</summary>
                 <p>
                     Toujours. CSV pour effectif et stats, PDF pour les rapports de saison, ICS pour le calendrier,
                     et une API REST pour tout le reste.
                 </p>
             </details>
-            <details class="faq__item reveal">
+            <details class="tactical-faq__item reveal">
                 <summary>Andfield est-il open-source ?</summary>
                 <p>
                     Le cœur du projet l'est. Vous pouvez le cloner, le self-héberger, et brancher votre propre LLM.
@@ -433,31 +429,31 @@
     </div>
 </section>
 
-<section class="contact" id="contact">
+<section class="tactical-contact" id="contact">
     <div class="container">
         <h2 class="reveal">
             Prêt à prendre<br>
             le <em>contrôle</em> ?
         </h2>
-        <div class="contact__right">
+        <div class="tactical-contact__right">
             {% if app.user %}
                 <p class="reveal reveal-delay-1">
                     Content de vous revoir. Votre espace coach vous attend, avec toutes les nouveautés intégrées.
                 </p>
-                <a href="{{ path('app_team_index') }}" class="btn-primary reveal reveal-delay-2">
+                <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--primary reveal reveal-delay-2">
                     Ouvrir mon espace coach
                 </a>
-                <a href="{{ path('app_pricing') }}" class="contact__email reveal reveal-delay-3">
+                <a href="{{ path('app_pricing') }}" class="tactical-contact__link reveal reveal-delay-3">
                     Gérer mon abonnement →
                 </a>
             {% else %}
                 <p class="reveal reveal-delay-1">
                     Créez votre compte gratuitement. Votre première composition est en ligne avant la fin de l'entraînement.
                 </p>
-                <a href="{{ path('app_register') }}" class="btn-primary reveal reveal-delay-2">
+                <a href="{{ path('app_register') }}" class="tactical-btn tactical-btn--primary reveal reveal-delay-2">
                     Créer mon compte
                 </a>
-                <a href="{{ path('app_login') }}" class="contact__email reveal reveal-delay-3">
+                <a href="{{ path('app_login') }}" class="tactical-contact__link reveal reveal-delay-3">
                     Déjà un compte ? Se connecter →
                 </a>
             {% endif %}
@@ -465,10 +461,10 @@
     </div>
 </section>
 
-<footer class="footer footer--rich">
-    <div class="container footer__grid">
-        <div class="footer__brand">
-            <a href="/" class="footer__logo">Andfield</a>
+<footer class="tactical-footer tactical-footer--rich">
+    <div class="container tactical-footer__grid">
+        <div class="tactical-footer__brand">
+            <a href="/" class="tactical-footer__logo">Andfield</a>
             <p>Sport collectif, gestion moderne. Pour les coachs qui veulent penser <em>tactique</em>, pas <em>tableur</em>.</p>
         </div>
         <div>
@@ -497,8 +493,8 @@
             </ul>
         </div>
     </div>
-    <div class="container footer__bottom">
-        <span class="footer__copy">© {{ "now"|date("Y") }} Andfield. Tous droits réservés.</span>
+    <div class="container tactical-footer__bottom">
+        <span class="tactical-footer__copy">© {{ "now"|date("Y") }} Andfield. Tous droits réservés.</span>
     </div>
 </footer>
 

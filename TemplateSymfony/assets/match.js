@@ -28,18 +28,18 @@ class MatchBoard {
     initDropZone() {
         this.wrapper.addEventListener('dragover', (event) => {
             event.preventDefault();
-            this.wrapper.classList.add('drag-over');
+            this.wrapper.classList.add('tactical-drag-over');
         });
 
         this.wrapper.addEventListener('dragleave', (event) => {
             if (!this.wrapper.contains(event.relatedTarget)) {
-                this.wrapper.classList.remove('drag-over');
+                this.wrapper.classList.remove('tactical-drag-over');
             }
         });
 
         this.wrapper.addEventListener('drop', (event) => {
             event.preventDefault();
-            this.wrapper.classList.remove('drag-over');
+            this.wrapper.classList.remove('tactical-drag-over');
 
             if (this.dragPlayerId === null) {
                 return;
@@ -58,19 +58,19 @@ class MatchBoard {
     }
 
     initBenchPlayers() {
-        this.root.querySelectorAll('.bench-card').forEach((element) => this.initBenchPlayerDrag(element));
+        this.root.querySelectorAll('.tactical-bench-card').forEach((element) => this.initBenchPlayerDrag(element));
     }
 
     initBenchPlayerDrag(element) {
         element.addEventListener('dragstart', (event) => {
             this.dragSource = 'bench';
             this.dragPlayerId = element.dataset.playerId;
-            element.classList.add('bench-card--dragging');
+            element.classList.add('tactical-bench-card--dragging');
             event.dataTransfer.effectAllowed = 'move';
         });
 
         element.addEventListener('dragend', () => {
-            element.classList.remove('bench-card--dragging');
+            element.classList.remove('tactical-bench-card--dragging');
         });
     }
 
@@ -84,14 +84,14 @@ class MatchBoard {
 
     initDeselect() {
         this.wrapper.addEventListener('click', (event) => {
-            if (!event.target.closest('.player-token')) {
+            if (!event.target.closest('.tactical-player-token')) {
                 this.clearSelection();
             }
         });
     }
 
     addPlayerToPitch(playerId, posX, posY) {
-        const benchElement = this.root.querySelector(`.bench-card[data-player-id="${playerId}"]`);
+        const benchElement = this.root.querySelector(`.tactical-bench-card[data-player-id="${playerId}"]`);
         if (!benchElement) {
             return;
         }
@@ -111,7 +111,7 @@ class MatchBoard {
         entry.posX = posX;
         entry.posY = posY;
 
-        const token = this.playersLayer.querySelector(`.player-token[data-player-id="${playerId}"]`);
+        const token = this.playersLayer.querySelector(`.tactical-player-token[data-player-id="${playerId}"]`);
         if (token) {
             token.style.left = posX + '%';
             token.style.top = posY + '%';
@@ -119,7 +119,7 @@ class MatchBoard {
     }
 
     renderToken(playerId) {
-        const existing = this.playersLayer.querySelector(`.player-token[data-player-id="${playerId}"]`);
+        const existing = this.playersLayer.querySelector(`.tactical-player-token[data-player-id="${playerId}"]`);
         if (existing) {
             existing.remove();
         }
@@ -130,22 +130,22 @@ class MatchBoard {
         }
 
         const token = document.createElement('div');
-        token.className = `player-token player-token--${entry.data.side}`;
+        token.className = `tactical-player-token tactical-player-token--${entry.data.side}`;
         token.dataset.playerId = playerId;
         token.dataset.playerData = JSON.stringify(entry.data);
         token.draggable = true;
         token.style.left = entry.posX + '%';
         token.style.top = entry.posY + '%';
         token.innerHTML = `
-            <div class="player-token__circle">${entry.data.number}</div>
-            <div class="player-token__name">${entry.data.shortName}</div>
+            <div class="tactical-player-token__circle">${entry.data.number}</div>
+            <div class="tactical-player-token__name">${entry.data.shortName}</div>
         `;
 
         this.bindTokenEvents(token, playerId);
         this.playersLayer.appendChild(token);
 
         if (this.selectedPlayerId === playerId) {
-            token.classList.add('player-token--selected');
+            token.classList.add('tactical-player-token--selected');
         }
     }
 
@@ -153,12 +153,12 @@ class MatchBoard {
         token.addEventListener('dragstart', (event) => {
             this.dragSource = 'pitch';
             this.dragPlayerId = playerId;
-            token.classList.add('player-token--dragging');
+            token.classList.add('tactical-player-token--dragging');
             event.dataTransfer.effectAllowed = 'move';
         });
 
         token.addEventListener('dragend', () => {
-            token.classList.remove('player-token--dragging');
+            token.classList.remove('tactical-player-token--dragging');
         });
 
         token.addEventListener('click', (event) => {
@@ -174,13 +174,13 @@ class MatchBoard {
 
     selectPlayer(playerId) {
         if (this.selectedPlayerId !== null) {
-            const previous = this.playersLayer.querySelector(`.player-token[data-player-id="${this.selectedPlayerId}"]`);
-            previous?.classList.remove('player-token--selected');
+            const previous = this.playersLayer.querySelector(`.tactical-player-token[data-player-id="${this.selectedPlayerId}"]`);
+            previous?.classList.remove('tactical-player-token--selected');
         }
 
         this.selectedPlayerId = playerId;
-        const token = this.playersLayer.querySelector(`.player-token[data-player-id="${playerId}"]`);
-        token?.classList.add('player-token--selected');
+        const token = this.playersLayer.querySelector(`.tactical-player-token[data-player-id="${playerId}"]`);
+        token?.classList.add('tactical-player-token--selected');
 
         const entry = this.positions.get(playerId);
         if (!entry) {
@@ -190,8 +190,8 @@ class MatchBoard {
         const sideLabel = entry.data.side === 'home' ? 'Domicile' : 'Extérieur';
         if (this.selectedLabel) {
             this.selectedLabel.innerHTML = `
-                <span class="match-selected__label">${entry.data.name}</span>
-                <span class="match-selected__meta">${sideLabel} · #${entry.data.number} · ${entry.data.position}</span>
+                <span class="tactical-match-selected__label">${entry.data.name}</span>
+                <span class="tactical-match-selected__meta">${sideLabel} · #${entry.data.number} · ${entry.data.position}</span>
             `;
         }
 
@@ -202,13 +202,13 @@ class MatchBoard {
 
     clearSelection() {
         if (this.selectedPlayerId !== null) {
-            const previous = this.playersLayer.querySelector(`.player-token[data-player-id="${this.selectedPlayerId}"]`);
-            previous?.classList.remove('player-token--selected');
+            const previous = this.playersLayer.querySelector(`.tactical-player-token[data-player-id="${this.selectedPlayerId}"]`);
+            previous?.classList.remove('tactical-player-token--selected');
         }
 
         this.selectedPlayerId = null;
         if (this.selectedLabel) {
-            this.selectedLabel.innerHTML = '<span class="match-selected__label">Aucun joueur sélectionné</span>';
+            this.selectedLabel.innerHTML = '<span class="tactical-match-selected__label">Aucun joueur sélectionné</span>';
         }
         if (this.removeButton) {
             this.removeButton.disabled = true;
@@ -221,7 +221,7 @@ class MatchBoard {
             return;
         }
 
-        const token = this.playersLayer.querySelector(`.player-token[data-player-id="${playerId}"]`);
+        const token = this.playersLayer.querySelector(`.tactical-player-token[data-player-id="${playerId}"]`);
         token?.remove();
 
         this.positions.delete(playerId);
@@ -233,7 +233,7 @@ class MatchBoard {
     }
 
     addToBench(data) {
-        const bench = this.root.querySelector(`.bench-list[data-bench-side="${data.side}"]`);
+        const bench = this.root.querySelector(`.tactical-bench-list[data-bench-side="${data.side}"]`);
         if (!bench) {
             return;
         }
@@ -247,7 +247,7 @@ class MatchBoard {
                     : 'ATT';
 
         const element = document.createElement('div');
-        element.className = `bench-card bench-card--${data.side}`;
+        element.className = `tactical-bench-card tactical-bench-card--${data.side}`;
         element.draggable = true;
         element.dataset.playerId = data.id;
         element.dataset.posGroup = posGroup;
@@ -256,27 +256,27 @@ class MatchBoard {
 
         if (data.photo) {
             element.innerHTML = `
-                <img src="/uploads/players/${data.photo}" class="bench-card__photo" alt="">
-                <div class="bench-card__info">
-                    <div class="bench-card__name">${data.name}</div>
-                    <div class="bench-card__meta">
-                        <span class="bench-card__num">#${data.number}</span>
-                        <span class="pos-badge pos-badge--${posGroup.toLowerCase()}">${data.position}</span>
+                <img src="/uploads/players/${data.photo}" class="tactical-bench-card__photo" alt="">
+                <div class="tactical-bench-card__info">
+                    <div class="tactical-bench-card__name">${data.name}</div>
+                    <div class="tactical-bench-card__meta">
+                        <span class="tactical-bench-card__num">#${data.number}</span>
+                        <span class="tactical-chip-pos tactical-chip-pos--${posGroup.toLowerCase()}">${data.position}</span>
                     </div>
                 </div>
-                <div class="bench-card__drag">⣿</div>
+                <div class="tactical-bench-card__drag">⣿</div>
             `;
         } else {
             element.innerHTML = `
-                <div class="bench-card__avatar bench-card__avatar--${posGroup.toLowerCase()}">${(data.shortName || '').slice(0, 2).toUpperCase()}</div>
-                <div class="bench-card__info">
-                    <div class="bench-card__name">${data.name}</div>
-                    <div class="bench-card__meta">
-                        <span class="bench-card__num">#${data.number}</span>
-                        <span class="pos-badge pos-badge--${posGroup.toLowerCase()}">${data.position}</span>
+                <div class="tactical-bench-card__avatar tactical-bench-card__avatar--${posGroup.toLowerCase()}">${(data.shortName || '').slice(0, 2).toUpperCase()}</div>
+                <div class="tactical-bench-card__info">
+                    <div class="tactical-bench-card__name">${data.name}</div>
+                    <div class="tactical-bench-card__meta">
+                        <span class="tactical-bench-card__num">#${data.number}</span>
+                        <span class="tactical-chip-pos tactical-chip-pos--${posGroup.toLowerCase()}">${data.position}</span>
                     </div>
                 </div>
-                <div class="bench-card__drag">⣿</div>
+                <div class="tactical-bench-card__drag">⣿</div>
             `;
         }
 

@@ -4,64 +4,66 @@
 
 {% block stylesheets %}
     <link rel="stylesheet" href="{{ asset('styles/home.css') }}">
-    <style>
-        .pricing-wrap { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem; }
-        .pricing-wrap h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); margin: 0 0 1rem; }
-        .pricing-wrap .sub { color: #555; max-width: 640px; margin: 0 auto 3rem; text-align: center; }
-        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
-        .plan { background: #fff; border: 1px solid #e5e5e5; border-radius: 18px; padding: 2rem; display: flex; flex-direction: column; gap: 1rem; }
-        .plan--highlighted { border-color: #3a6b4f; box-shadow: 0 10px 40px rgba(58, 107, 79, 0.15); transform: translateY(-4px); }
-        .plan__name { font-size: 1.4rem; font-weight: 600; }
-        .plan__price { font-size: 2.4rem; font-weight: 700; }
-        .plan__period { color: #777; font-size: .95rem; }
-        .plan__desc { color: #555; font-size: .95rem; min-height: 2.5em; }
-        .plan__features { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: .6rem; }
-        .plan__features li::before { content: '✓'; color: #3a6b4f; margin-right: .6rem; font-weight: 700; }
-        .plan__cta { display: inline-block; padding: .85rem 1.4rem; text-align: center; border-radius: 10px; text-decoration: none; font-weight: 600; margin-top: auto; }
-        .plan__cta--primary { background: #3a6b4f; color: #fff; }
-        .plan__cta--ghost { background: transparent; color: #3a6b4f; border: 1.5px solid #3a6b4f; }
-        .header-nav { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 2rem; border-bottom: 1px solid #eee; }
-        .header-nav a { color: #333; text-decoration: none; font-weight: 600; }
-    </style>
 {% endblock %}
 
 {% block body %}
-    <nav class="header-nav">
-        <a href="{{ path('app_home') }}">Andfield</a>
-        <a href="{{ path('app_login') }}">Se connecter</a>
-    </nav>
+<nav class="tactical-nav" id="tactical-nav">
+    <a href="{{ path('app_home') }}" class="tactical-nav__logo">Andfield</a>
+    <ul class="tactical-nav__links">
+        <li><a href="{{ path('app_home') }}">Accueil</a></li>
+        <li><a href="{{ path('app_home') }}#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="{{ path('app_home') }}#faq">FAQ</a></li>
+    </ul>
+    <a href="{{ path('app_login') }}" class="tactical-btn tactical-btn--primary">Se connecter</a>
+</nav>
 
-    <main class="pricing-wrap">
-        <h1 style="text-align:center;">Un tarif <em>honnête</em> pour chaque coach</h1>
-        <p class="sub">
-            Commencez gratuitement. Passez à un plan payant quand votre club grandit.
-            Sans engagement, annulation en un clic.
-        </p>
+<main style="padding-top:6rem;">
+    <div class="container" style="padding-top:3rem;padding-bottom:5rem;">
+        <div style="text-align:center;margin-bottom:3.5rem;">
+            <span class="tactical-section-label">Tarifs</span>
+            <h1 style="font-family:var(--font-display);font-size:clamp(2.2rem,5vw,3.5rem);margin:0.75rem 0 1rem;">
+                Un tarif <em>honnête</em> pour chaque coach
+            </h1>
+            <p style="color:var(--on-surface-variant);max-width:640px;margin:0 auto;font-size:1.0625rem;">
+                Commencez gratuitement. Passez à un plan payant quand votre club grandit.
+                Sans engagement, annulation en un clic.
+            </p>
+        </div>
 
-        <div class="pricing-grid">
+        <div class="tactical-plans-grid">
             {% for plan in plans %}
-                <article class="plan {% if plan.highlighted %}plan--highlighted{% endif %}" data-plan="{{ plan.id }}">
-                    <div class="plan__name">{{ plan.name }}</div>
-                    <div>
-                        <span class="plan__price">{{ plan.price }}</span>
-                        <span class="plan__period">{{ plan.period }}</span>
-                    </div>
-                    <div class="plan__desc">{{ plan.description }}</div>
-                    <ul class="plan__features">
+                <article class="tactical-plan-card {% if plan.highlighted %}tactical-plan-card--featured{% endif %}" data-plan="{{ plan.id }}">
+                    {% if plan.highlighted %}
+                        <span class="tactical-plan-card__flag">Recommandé</span>
+                    {% endif %}
+                    <header>
+                        <h3>{{ plan.name }}</h3>
+                        <span class="tactical-plan-card__price">{{ plan.price }}<span>{{ plan.period }}</span></span>
+                    </header>
+                    <p style="color:var(--on-surface-variant);font-size:0.9375rem;min-height:2.5em;">{{ plan.description }}</p>
+                    <ul>
                         {% for feature in plan.features %}
                             <li>{{ feature }}</li>
                         {% endfor %}
                     </ul>
                     <a href="{{ path('app_register', {plan: plan.id}) }}"
-                       class="plan__cta {{ plan.highlighted ? 'plan__cta--primary' : 'plan__cta--ghost' }}">
+                       class="tactical-btn {% if plan.highlighted %}tactical-btn--primary{% else %}tactical-btn--ghost{% endif %}"
+                       style="margin-top:auto;text-align:center;">
                         {{ plan.cta }}
                     </a>
                 </article>
             {% endfor %}
         </div>
 
-        <p style="text-align:center; color:#777; margin-top:3rem; font-size:.9rem;">
-            Les tarifs en euros incluent la TVA. Paiement sécurisé via Stripe (disponible en phase 2).
+        <p style="text-align:center;color:var(--on-surface-variant);margin-top:3rem;font-size:0.875rem;">
+            Les tarifs en euros incluent la TVA. Paiement sécurisé via Stripe.
         </p>
-    </main>
+    </div>
+</main>
+
+<footer class="tactical-footer">
+    <div class="container tactical-footer__bottom">
+        <span class="tactical-footer__copy">© {{ "now"|date("Y") }} Andfield. Tous droits réservés.</span>
+    </div>
+</footer>
 {% endblock %}

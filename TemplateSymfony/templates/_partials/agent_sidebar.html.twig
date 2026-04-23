@@ -1,8 +1,7 @@
 {# Widget sidebar agent IA — inclus dans layout/app.html.twig #}
 {% set teamId = app.request.attributes.get('teamId') ?? app.request.attributes.get('id') ?? '' %}
 
-{# Bouton flottant #}
-<button id="agent-fab" class="agent-fab" title="Assistant Coach IA" aria-label="Ouvrir l'assistant IA">
+<button id="agent-fab" class="tactical-agent-fab" title="Assistant Coach IA" aria-label="Ouvrir l'assistant IA">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/>
         <path d="M8 12h.01M12 12h.01M16 12h.01"/>
@@ -10,24 +9,21 @@
     </svg>
 </button>
 
-{# Overlay #}
-<div id="agent-overlay" class="agent-overlay"></div>
+<div id="agent-overlay" class="tactical-agent-overlay"></div>
 
-{# Sidebar #}
-<div id="agent-sidebar" class="agent-sidebar" role="dialog" aria-label="Assistant Coach IA">
+<div id="agent-sidebar" class="tactical-agent-sidebar" role="dialog" aria-label="Assistant Coach IA">
 
-    {# Header #}
-    <div class="agent-header">
-        <div class="agent-header__title">
-            <span id="agent-dot" class="agent-header__dot"></span>
+    <div class="tactical-agent-header">
+        <div class="tactical-agent-header__title">
+            <span id="agent-dot" class="tactical-agent-header__dot"></span>
             Assistant Coach IA
         </div>
-        <div class="agent-header__actions">
-            <label class="agent-mode-toggle" title="En mode auto, les actions sont exécutées sans confirmation">
+        <div class="tactical-agent-header__actions">
+            <label class="tactical-agent-mode-toggle" title="En mode auto, les actions sont exécutées sans confirmation">
                 <input type="checkbox" id="agent-mode-toggle">
                 <span id="agent-mode-label">Mode manuel</span>
             </label>
-            <button id="agent-close" class="agent-close" aria-label="Fermer">
+            <button id="agent-close" class="tactical-agent-close" aria-label="Fermer">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 6 6 18M6 6l12 12"/>
                 </svg>
@@ -35,14 +31,12 @@
         </div>
     </div>
 
-    {# Barre de conversations #}
-    <div id="agent-conv-bar" class="agent-conv-bar"></div>
+    <div id="agent-conv-bar" class="tactical-agent-conv-bar"></div>
 
-    {# Zone messages #}
-    <div id="agent-messages" class="agent-messages">
-        <div class="agent-message agent-message--assistant">
-            <div class="agent-bubble">
-                Bonjour Coach 👋 Je suis votre assistant IA spécialisé football.
+    <div id="agent-messages" class="tactical-agent-messages">
+        <div class="tactical-agent-message tactical-agent-message--assistant">
+            <div class="tactical-agent-bubble">
+                Bonjour Coach. Je suis votre assistant IA spécialisé football.
                 {% if teamId %}
                     Je suis contextualisé sur l'équipe en cours. Comment puis-je vous aider ?
                 {% else %}
@@ -52,16 +46,15 @@
         </div>
     </div>
 
-    {# Zone de saisie #}
-    <div class="agent-input-area">
+    <div class="tactical-agent-input-area">
         <textarea
             id="agent-input"
-            class="agent-input"
+            class="tactical-agent-input"
             rows="1"
             placeholder="Pose une question ou demande une action…"
             aria-label="Message pour l'assistant"
         ></textarea>
-        <button id="agent-send" class="agent-send" aria-label="Envoyer">
+        <button id="agent-send" class="tactical-agent-send" aria-label="Envoyer">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/>
             </svg>

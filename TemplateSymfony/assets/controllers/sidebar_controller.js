@@ -26,7 +26,7 @@ export default class extends Controller {
         if (
             this.currentPlayerId !== null &&
             !this.panelTarget.contains(e.target) &&
-            !e.target.closest('.player-token')
+            !e.target.closest('.tactical-player-token')
         ) {
             this.close();
         }
@@ -37,12 +37,12 @@ export default class extends Controller {
         this.benchPanelTarget.style.display = '';
         this.playerPanelTarget.style.display = 'none';
 
-        this.benchTabTarget.classList.add('panel-tab--active');
+        this.benchTabTarget.classList.add('tactical-panel-tab--active');
         this.playerTabTarget.style.display = 'none';
 
         // Deselect player tokens
-        document.querySelectorAll('.player-token--selected').forEach(el => {
-            el.classList.remove('player-token--selected');
+        document.querySelectorAll('.tactical-player-token--selected').forEach(el => {
+            el.classList.remove('tactical-player-token--selected');
         });
         this.currentPlayerId = null;
     }
@@ -52,7 +52,7 @@ export default class extends Controller {
         this.benchPanelTarget.style.display = 'none';
         this.playerPanelTarget.style.display = '';
 
-        this.benchTabTarget.classList.remove('panel-tab--active');
+        this.benchTabTarget.classList.remove('tactical-panel-tab--active');
         this.playerTabTarget.style.display = '';
     }
 
@@ -94,12 +94,11 @@ export default class extends Controller {
     filterBench({ target }) {
         const filter = target.dataset.filter;
 
-        this.element.querySelectorAll('.pos-filter').forEach(btn => {
-            btn.classList.toggle('pos-filter--active', btn.dataset.filter === filter);
-            btn.classList.toggle('active', btn.dataset.filter === filter);
+        this.element.querySelectorAll('.tactical-pos-filter').forEach(btn => {
+            btn.classList.toggle('tactical-pos-filter--active', btn.dataset.filter === filter);
         });
 
-        this.element.querySelectorAll('.bench-card').forEach(card => {
+        this.element.querySelectorAll('.tactical-bench-card').forEach(card => {
             const group = card.dataset.posGroup;
             card.style.display = (filter === 'all' || group === filter) ? '' : 'none';
         });

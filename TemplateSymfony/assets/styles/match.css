@@ -1,150 +1,149 @@
-.match-layout {
+/* ═══════════════════════════════════════════════════════════════
+   MATCH — board, prepare, match_notes  (DA Tactical Elite)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Match Board layout ──────────────────────────────────────── */
+.tactical-match-layout {
   display: grid;
-  grid-template-columns: 320px 1fr 320px;
-  height: 100vh;
-  overflow: hidden;
-  background: #111;
+  grid-template-columns: 300px 1fr 300px;
+  height: 100vh; overflow: hidden;
+  background: var(--surface);
+}
+.tactical-match-panel {
+  background: var(--surface-container-low);
+  border-right: 1px solid var(--outline-variant);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.tactical-match-panel:last-child { border-right: none; border-left: 1px solid var(--outline-variant); }
+.tactical-match-panel__header {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+}
+.tactical-match-panel__title {
+  font-family: var(--font-display); font-size: var(--text-label-bold); font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--on-surface-variant);
+}
+.tactical-match-center {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+.tactical-match-center__pitch {
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-md);
 }
 
-.match-side-panel {
-  background: var(--warm-white);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+/* Drag-over state */
+.tactical-drag-over {
+  outline: 2px dashed rgba(199,243,0,0.5);
+  outline-offset: -2px;
 }
 
-.match-side-panel--home {
-  border-right: 1px solid var(--stone-100);
+/* ── Match Prepare ───────────────────────────────────────────── */
+.tactical-match-prepare { display: grid; gap: var(--space-md); }
+.tactical-match-prepare__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 720px) minmax(280px, 1fr);
+  gap: var(--space-sm); align-items: start;
+}
+.tactical-match-prepare__card { display: grid; gap: var(--space-md); }
+.tactical-match-prepare__textarea { min-height: 112px; }
+.tactical-match-prepare__checklist {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  color: var(--on-surface-variant);
+  font-size: 0.875rem;
+}
+.tactical-match-preview { display: grid; gap: var(--space-md); }
+.tactical-match-preview__header {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-top-color: rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+}
+.tactical-match-preview__grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md);
+}
+.tactical-match-preview__team {
+  background: rgba(29,32,34,0.6); backdrop-filter: blur(12px);
+  border: 1px solid var(--outline-variant);
+  border-top-color: rgba(255,255,255,0.1);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm) var(--space-md);
+}
+.tactical-match-preview__player {
+  display: grid;
+  gap: 0.2rem;
+}
+.tactical-match-preview__player strong {
+  font-size: 0.9rem;
+  color: var(--on-surface);
+}
+.tactical-match-preview__player span {
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
 }
 
-.match-side-panel--away {
-  border-left: 1px solid var(--stone-100);
+.tactical-match-briefing {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+.tactical-match-briefing__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: var(--space-sm);
+}
+.tactical-match-briefing__notes {
+  display: grid;
+  gap: 0.6rem;
+  color: var(--on-surface-variant);
+  font-size: 0.875rem;
+}
+.tactical-match-briefing__notes p { margin: 0; }
+.tactical-match-briefing__list {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+.tactical-match-briefing__item {
+  color: var(--on-surface-variant);
+  font-size: 0.825rem;
 }
 
-.match-side-panel__header {
-  padding: 1rem 1rem 0.85rem;
-  border-bottom: 1px solid var(--stone-100);
-  background: var(--cream);
+/* ── Match Notes ─────────────────────────────────────────────── */
+.tactical-match-notes { }
+.tactical-match-notes__header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-md);
+  gap: var(--space-sm); flex-wrap: wrap;
 }
 
-.match-side-panel__label {
-  font-size: var(--text-xs);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-  color: var(--stone-600);
-  margin-bottom: 0.35rem;
+/* Player notes table row */
+.tactical-player-note-row td { vertical-align: middle; }
+.tactical-player-rating {
+  display: flex; align-items: center; gap: 0.4rem;
 }
-
-.match-side-panel__title {
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  line-height: 1.2;
-  color: var(--stone-900);
+.tactical-player-rating__score {
+  font-family: var(--font-display); font-size: 20px; font-weight: 800;
+  letter-spacing: -0.02em;
 }
+.tactical-player-rating__score--high { color: var(--secondary-container); }
+.tactical-player-rating__score--mid  { color: var(--primary); }
+.tactical-player-rating__score--low  { color: var(--error); }
 
-.match-side-panel__sub {
-  margin-top: 0.25rem;
-  font-size: var(--text-xs);
-  color: var(--stone-600);
-}
+/* Textarea in notes */
+.tactical-match-notes__textarea { min-height: 120px; resize: vertical; }
 
-.match-pitch-area {
-  min-width: 0;
-}
-
-.match-selected {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-  min-width: 180px;
-}
-
-.match-selected__label {
-  font-size: var(--text-sm);
-  color: var(--warm-white);
-  font-weight: 500;
-}
-
-.match-selected__meta {
-  font-size: var(--text-xs);
-  color: rgba(255,255,255,0.45);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.bench-card--home::before,
-.bench-card--away::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-}
-
-.bench-card--home::before {
-  background: var(--brand);
-}
-
-.bench-card--away::before {
-  background: #9b4f4f;
-}
-
-.player-token--home .player-token__circle {
-  background: var(--brand);
-}
-
-.player-token--away .player-token__circle {
-  background: #9b4f4f;
-}
-
-.player-token--home:hover .player-token__circle {
-  background: var(--brand-dark);
-}
-
-.player-token--away:hover .player-token__circle {
-  background: #7f3f3f;
-}
-
-.player-token--selected.player-token--away .player-token__circle,
-.player-token--selected.player-token--home .player-token__circle {
-  background: #fff;
-  color: var(--stone-900);
-}
-
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 1200px) {
-  .match-layout {
-    grid-template-columns: 280px 1fr 280px;
-  }
-}
-
-@media (max-width: 1024px) {
-  .match-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-    min-height: 100vh;
-  }
-
-  .match-side-panel {
-    max-height: 32vh;
-  }
-
-  .match-pitch-area .pitch-container {
-    min-height: 65vh;
-  }
-
-  .pitch-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .pitch-toolbar__actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .match-selected {
-    align-items: flex-start;
-  }
+  .tactical-match-layout { grid-template-columns: 1fr; height: auto; }
+  .tactical-match-panel { max-height: 320px; border-right: none; border-bottom: 1px solid var(--outline-variant); }
+  .tactical-match-briefing,
+  .tactical-match-prepare__layout,
+  .tactical-match-preview__grid { grid-template-columns: 1fr; }
 }

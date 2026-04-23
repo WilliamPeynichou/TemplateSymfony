@@ -2,94 +2,226 @@
 {% block title %}Préparer un match{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="tactical-page-header">
     <div>
-        <h1 class="page-header__title">Préparer un <em>match</em></h1>
-        <p class="page-header__sub">Importez deux équipes de base ou opposez une équipe créée à un adversaire fictif.</p>
+        <h1 class="tactical-page-header__title">Préparer un <em>match</em></h1>
+        <p class="tactical-page-header__sub">Contexte, disponibilité, briefing tactique et composition de départ avant d’ouvrir le terrain.</p>
     </div>
 </div>
 
-<div class="page-body match-prepare">
-    <div class="match-prepare__layout">
-        <div class="form-card match-prepare__card">
-            <form method="post">
-                <div class="form-group">
-                    <label class="form-label" for="scenario">Scénario</label>
-                    <select id="scenario" name="scenario" class="form-control"
-                            onchange="window.location='{{ path('app_match_prepare') }}?scenario=' + this.value">
-                        <option value="base" {% if scenario == 'base' %}selected{% endif %}>Deux équipes de base</option>
-                        <option value="custom_vs_fictional" {% if scenario == 'custom_vs_fictional' %}selected{% endif %}>Une équipe créée contre une équipe fictive</option>
-                    </select>
+<div class="tactical-page-body">
+    <div class="tactical-match-prepare__layout">
+        <div class="tactical-form-card tactical-match-prepare__card">
+            <form method="post" class="tactical-match-prepare">
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Cadre du match</div>
+                    <div class="tactical-form-group" style="margin-top:var(--space-sm);">
+                        <label class="tactical-form-label" for="scenario">Scénario</label>
+                        <select id="scenario" name="scenario" class="tactical-input"
+                                onchange="window.location='{{ path('app_match_prepare') }}?scenario=' + this.value + '&created_team=' + encodeURIComponent(document.getElementById('created_team')?.value || '')">
+                            <option value="base" {% if scenario == 'base' %}selected{% endif %}>Deux équipes de base</option>
+                            <option value="custom_vs_fictional" {% if scenario == 'custom_vs_fictional' %}selected{% endif %}>Une équipe créée contre une équipe fictive</option>
+                        </select>
+                    </div>
+
+                    {% if scenario == 'custom_vs_fictional' %}
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="created_team">Équipe coachée</label>
+                            <select id="created_team" name="created_team" class="tactical-input" {% if customTeams is empty %}disabled{% endif %}>
+                                <option value="">Sélectionnez une équipe</option>
+                                {% for team in customTeams %}
+                                    <option value="{{ team.id }}" {% if selectedCustomTeam and selectedCustomTeam.id == team.id %}selected{% endif %}>
+                                        {{ team.name }}{% if team.club %} · {{ team.club }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if customTeams is empty %}
+                                <span style="font-size:0.8125rem;color:var(--error);display:block;margin-top:0.35rem;">Crée d'abord une équipe dans "Mes équipes".</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="tactical-form-row">
+                            <div class="tactical-form-group">
+                                <label class="tactical-form-label" for="fictional_name">Adversaire</label>
+                                <input id="fictional_name" type="text" name="fictional_name" class="tactical-input" placeholder="Ex : FC Andfield Academy" value="{{ app.request.request.get('fictional_name', 'Équipe fictive') }}">
+                            </div>
+                            <div class="tactical-form-group">
+                                <label class="tactical-form-label" for="competition">Compétition</label>
+                                <input id="competition" type="text" name="competition" class="tactical-input" placeholder="Championnat U17" value="{{ matchContext.competition }}">
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="tactical-form-row">
+                            <div class="tactical-form-group">
+                                <label class="tactical-form-label" for="base_home">Équipe 1</label>
+                                <select id="base_home" name="base_home" class="tactical-input">
+                                    <option value="liverpool" {% if app.request.request.get('base_home', 'liverpool') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
+                                    <option value="paris" {% if app.request.request.get('base_home') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
+                                </select>
+                            </div>
+                            <div class="tactical-form-group">
+                                <label class="tactical-form-label" for="base_away">Équipe 2</label>
+                                <select id="base_away" name="base_away" class="tactical-input">
+                                    <option value="paris" {% if app.request.request.get('base_away', 'paris') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
+                                    <option value="liverpool" {% if app.request.request.get('base_away') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="tactical-form-row">
+                            <div class="tactical-form-group">
+                                <label class="tactical-form-label" for="opponent_label">Affiche</label>
+                                <input id="opponent_label" type="text" name="opponent_label" class="tactical-input" placeholder="Ex : Duel haut de tableau" value="{{ matchContext.opponentLabel }}">
+                            </div>
+                            <div class="tactical-form-group">
+                                <label class="tactical-form-label" for="competition">Compétition</label>
+                                <input id="competition" type="text" name="competition" class="tactical-input" placeholder="Friendly / Cup / League" value="{{ matchContext.competition }}">
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="tactical-form-row">
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="kickoff">Coup d’envoi</label>
+                            <input id="kickoff" type="datetime-local" name="kickoff" class="tactical-input" value="{{ matchContext.kickoff }}">
+                        </div>
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="venue">Contexte</label>
+                            <select id="venue" name="venue" class="tactical-input">
+                                <option value="home" {% if matchContext.venue == 'home' %}selected{% endif %}>À domicile</option>
+                                <option value="away" {% if matchContext.venue == 'away' %}selected{% endif %}>À l’extérieur</option>
+                                <option value="neutral" {% if matchContext.venue == 'neutral' %}selected{% endif %}>Terrain neutre</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Plan tactique</div>
+                    <div class="tactical-form-row" style="margin-top:var(--space-sm);">
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="shape">Système visé</label>
+                            <select id="shape" name="shape" class="tactical-input">
+                                {% for shape in ['4-3-3', '4-2-3-1', '4-4-2', '3-4-3', '3-5-2'] %}
+                                    <option value="{{ shape }}" {% if matchContext.shape == shape %}selected{% endif %}>{{ shape }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="objective">Objectif principal</label>
+                            <input id="objective" type="text" name="objective" class="tactical-input" placeholder="Ex : verrouiller l’axe puis attaquer dans le dos" value="{{ matchContext.objective }}">
+                        </div>
+                    </div>
+                    <div class="tactical-form-row">
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="pressing_plan">Sans ballon</label>
+                            <textarea id="pressing_plan" name="pressing_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Bloc, hauteur, déclencheurs, couverture de l’axe">{{ matchContext.pressingPlan }}</textarea>
+                        </div>
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="in_possession_plan">Avec ballon</label>
+                            <textarea id="in_possession_plan" name="in_possession_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Sortie de balle, circuits, zones ciblées">{{ matchContext.inPossessionPlan }}</textarea>
+                        </div>
+                    </div>
+                    <div class="tactical-form-row">
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="transition_plan">Transitions</label>
+                            <textarea id="transition_plan" name="transition_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Contre-pressing, replis, premières passes">{{ matchContext.transitionPlan }}</textarea>
+                        </div>
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="set_pieces_plan">Coups de pied arrêtés</label>
+                            <textarea id="set_pieces_plan" name="set_pieces_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Tireurs, cibles, organisation défensive">{{ matchContext.setPiecesPlan }}</textarea>
+                        </div>
+                    </div>
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="watchouts">Points de vigilance</label>
+                        <textarea id="watchouts" name="watchouts" class="tactical-input tactical-match-prepare__textarea" placeholder="Joueur clé adverse, menace sur second ballon, gestion émotionnelle">{{ matchContext.watchouts }}</textarea>
+                    </div>
                 </div>
 
                 {% if scenario == 'custom_vs_fictional' %}
-                    <div class="form-group">
-                        <label class="form-label" for="created_team">Équipe créée</label>
-                        <select id="created_team" name="created_team" class="form-control" {% if customTeams is empty %}disabled{% endif %}>
-                            <option value="">Sélectionnez une équipe</option>
-                            {% for team in customTeams %}
-                                <option value="{{ team.id }}" {% if app.request.request.get('created_team') == team.id %}selected{% endif %}>
-                                    {{ team.name }}{% if team.club %} · {{ team.club }}{% endif %}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        {% if customTeams is empty %}
-                            <div class="form-error">Créez d'abord une équipe personnalisée dans "Mes équipes".</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="fictional_name">Nom de l'équipe fictive</label>
-                        <input id="fictional_name"
-                               type="text"
-                               name="fictional_name"
-                               class="form-control"
-                               placeholder="Ex : FC Andfield Academy"
-                               value="{{ app.request.request.get('fictional_name', 'Équipe fictive') }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="fictional_players">Joueurs fictifs (optionnel)</label>
-                        <textarea id="fictional_players"
-                                  name="fictional_players"
-                                  class="form-control match-prepare__textarea"
-                                  placeholder="Format : numéro, nom, poste&#10;Ex : 1, Gardien adverse, GK">{{ app.request.request.get('fictional_players') }}</textarea>
-                    </div>
-                {% else %}
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="base_home">Équipe 1</label>
-                            <select id="base_home" name="base_home" class="form-control">
-                                <option value="liverpool" {% if app.request.request.get('base_home', 'liverpool') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
-                                <option value="paris" {% if app.request.request.get('base_home') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="base_away">Équipe 2</label>
-                            <select id="base_away" name="base_away" class="form-control">
-                                <option value="paris" {% if app.request.request.get('base_away', 'paris') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
-                                <option value="liverpool" {% if app.request.request.get('base_away') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
-                            </select>
+                    <div class="tactical-card">
+                        <div class="tactical-card__title">Adversaire fictif</div>
+                        <p class="tactical-card__sub">Tu peux saisir un effectif sur mesure pour simuler les profils adverses.</p>
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="fictional_players">Joueurs fictifs</label>
+                            <textarea id="fictional_players" name="fictional_players" class="tactical-input tactical-match-prepare__textarea" placeholder="Format : numéro, nom, poste&#10;Ex : 1, Gardien adverse, GK">{{ app.request.request.get('fictional_players') }}</textarea>
                         </div>
                     </div>
                 {% endif %}
 
-                <div class="form-actions">
-                    <button class="btn btn--filled" type="submit">Préparer le match</button>
-                    <a href="{{ path('app_team_index') }}" class="btn">Retour aux équipes</a>
+                <div class="tactical-form-actions">
+                    <button class="tactical-btn tactical-btn--primary" type="submit">Ouvrir le tableau tactique</button>
+                    <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--outline">Retour aux équipes</a>
                 </div>
             </form>
         </div>
 
-        <div class="match-prepare__hint">
-            <div class="card">
-                <div class="card__title">Ce que fait cette page</div>
-                <div class="card__sub">
-                    En mode "équipes de base", Liverpool et Paris sont importés ou mis à jour automatiquement.
-                    En mode "fictif", votre équipe réelle est opposée à un effectif généré ou saisi à la main.
-                    Une fois validé, vous arrivez sur un terrain interactif pour placer les deux équipes.
+        <div class="tactical-match-preview">
+            <div class="tactical-card">
+                <div class="tactical-card__title">Cockpit coach</div>
+                <p class="tactical-card__sub">Prépare ton plan avec la disponibilité réelle, les leaders de forme et une recommandation de structure.</p>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.75rem;margin-top:var(--space-sm);">
+                    <div class="tactical-badge tactical-badge--lime">Système {{ selectedTeamPreview ? selectedTeamPreview.recommendedShape : matchContext.shape }}</div>
+                    <div class="tactical-badge">{{ matchContext.venue == 'away' ? 'Extérieur' : (matchContext.venue == 'neutral' ? 'Neutre' : 'Domicile') }}</div>
                 </div>
             </div>
+
+            {% if selectedTeamPreview %}
+                <div class="tactical-match-preview__grid">
+                    <div class="tactical-card tactical-match-preview__team">
+                        <div class="tactical-card__title">{{ selectedTeamPreview.teamName }}</div>
+                        <div class="tactical-card__sub">{{ selectedTeamPreview.counts.players }} joueurs · {{ selectedTeamPreview.recommendedShape }} recommandé</div>
+                        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.75rem;">
+                            <div><span class="tactical-badge tactical-badge--lime">{{ selectedTeamPreview.counts.available }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Disponibles</p></div>
+                            <div><span class="tactical-badge">{{ selectedTeamPreview.counts.unavailable }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Indisponibles</p></div>
+                            <div><span class="tactical-badge">{{ selectedTeamPreview.positionCounts.DEF }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Défenseurs</p></div>
+                            <div><span class="tactical-badge">{{ selectedTeamPreview.positionCounts.MID }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Milieux</p></div>
+                        </div>
+                    </div>
+                    <div class="tactical-card tactical-match-preview__team">
+                        <div class="tactical-card__title">Leaders du moment</div>
+                        <div style="display:grid;gap:0.6rem;">
+                            {% for player in selectedTeamPreview.topPerformers %}
+                                <div class="tactical-match-preview__player">
+                                    <strong>#{{ player.number }} {{ player.name }}</strong>
+                                    <span>{{ player.position }} · {{ player.minutes }} min · {{ player.attendanceRate }}%</span>
+                                </div>
+                            {% else %}
+                                <p class="tactical-card__sub">Pas encore de données de forme.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Absents et blessés</div>
+                    {% if selectedTeamPreview.unavailable is empty %}
+                        <p class="tactical-card__sub">Tout l’effectif est disponible.</p>
+                    {% else %}
+                        <div style="display:grid;gap:0.6rem;">
+                            {% for player in selectedTeamPreview.unavailable %}
+                                <div class="tactical-match-preview__player">
+                                    <strong>#{{ player.number }} {{ player.name }}</strong>
+                                    <span>{{ player.status }}{% if player.statusReason %} · {{ player.statusReason }}{% endif %}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Lecture rapide avant match</div>
+                    <ul class="tactical-match-prepare__checklist">
+                        <li>Valider le système cible : <strong>{{ selectedTeamPreview.recommendedShape }}</strong>.</li>
+                        <li>Construire le onze avec les joueurs disponibles d’abord.</li>
+                        <li>Prévoir les ajustements de transition et coups de pied arrêtés avant d’ouvrir le terrain.</li>
+                    </ul>
+                </div>
+            {% else %}
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Ce que fait cette page</div>
+                    <p class="tactical-card__sub">Choisis une équipe coachée pour faire remonter les indisponibilités, la profondeur par ligne et les leaders de forme avant de passer au tableau terrain.</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

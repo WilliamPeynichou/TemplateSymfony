@@ -2,57 +2,62 @@
 {% block title %}Mes équipes{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="tactical-page-header">
     <div>
-        <h1 class="page-header__title">Mes <em>équipes</em></h1>
-        <p class="page-header__sub">{{ teams|length }} équipe{{ teams|length > 1 ? 's' : '' }} dans votre espace</p>
+        <h1 class="tactical-page-header__title">Mes <em>équipes</em></h1>
+        <p class="tactical-page-header__sub">{{ teams|length }} équipe{{ teams|length > 1 ? 's' : '' }} dans votre espace</p>
     </div>
-    <a href="{{ path('app_team_new') }}" class="btn btn--filled">+ Nouvelle équipe</a>
+    <a href="{{ path('app_team_new') }}" class="tactical-btn tactical-btn--primary">+ Nouvelle équipe</a>
 </div>
 
-<div class="page-body">
+<div class="tactical-page-body">
     {% if teams|length == 0 %}
-        <div class="card-grid">
-            <div class="card card--empty">
-                <span style="font-size:2.5rem;">⚽</span>
-                <p style="font-size:var(--text-sm);color:var(--stone-600);max-width:30ch;">
+        <div class="tactical-card-grid">
+            <div class="tactical-card tactical-card--empty">
+                <p style="font-size:var(--text-label-bold);color:var(--on-surface-variant);max-width:30ch;">
                     Vous n'avez pas encore d'équipe. Créez votre première équipe pour commencer.
                 </p>
-                <a href="{{ path('app_team_new') }}" class="btn">Créer une équipe</a>
+                <a href="{{ path('app_team_new') }}" class="tactical-btn tactical-btn--ghost">Créer une équipe</a>
             </div>
         </div>
     {% else %}
-        <div class="card-grid">
+        <div class="tactical-card-grid">
             {% for team in teams %}
-                <div class="card">
-                    <div class="card__title">{{ team.name }}</div>
-                    <div class="card__sub">
+                <div class="tactical-card">
+                    <div class="tactical-card__title">{{ team.name }}</div>
+                    <div class="tactical-card__sub">
                         {% if team.club %}{{ team.club }}{% endif %}
                         {% if team.season %} · {{ team.season }}{% endif %}
                         <br>
-                        <span style="color:var(--brand)">{{ team.players|length }} joueur{{ team.players|length > 1 ? 's' : '' }}</span>
+                        <span style="color:var(--secondary-container)">{{ team.players|length }} joueur{{ team.players|length > 1 ? 's' : '' }}</span>
                     </div>
-                    <div class="card__actions">
-                        <a href="{{ path('app_composition_index', {id: team.id}) }}" class="btn btn--filled btn--sm">
-                            ⚽ Composition
+                    <div class="tactical-card__actions">
+                        <a href="{{ path('app_composition_index', {id: team.id}) }}" class="tactical-btn tactical-btn--primary tactical-btn--sm">
+                            Composition
                         </a>
-                        <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="btn btn--sm">
+                        <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">
                             Effectif
                         </a>
-                        <a href="{{ path('app_team_edit', {id: team.id}) }}" class="btn btn--sm">
+                        <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">
+                            Calendrier
+                        </a>
+                        <a href="{{ path('app_team_attendance_summary', {id: team.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">
+                            Présences
+                        </a>
+                        <a href="{{ path('app_team_edit', {id: team.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">
                             Modifier
                         </a>
                         <form method="post" action="{{ path('app_team_delete', {id: team.id}) }}"
                               onsubmit="return confirm('Supprimer cette équipe ?')">
                             <input type="hidden" name="_token" value="{{ csrf_token('delete_team_' ~ team.id) }}">
-                            <button type="submit" class="btn btn--sm btn--danger">Supprimer</button>
+                            <button type="submit" class="tactical-btn tactical-btn--danger tactical-btn--sm">Supprimer</button>
                         </form>
                     </div>
                 </div>
             {% endfor %}
-            <div class="card card--empty">
-                <span style="font-size:2rem;color:var(--stone-400)">+</span>
-                <a href="{{ path('app_team_new') }}" class="btn btn--sm">Ajouter une équipe</a>
+            <div class="tactical-card tactical-card--empty">
+                <span style="font-size:2rem;color:var(--on-surface-variant)">+</span>
+                <a href="{{ path('app_team_new') }}" class="tactical-btn tactical-btn--ghost tactical-btn--sm">Ajouter une équipe</a>
             </div>
         </div>
     {% endif %}

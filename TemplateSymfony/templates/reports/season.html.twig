@@ -1,33 +1,118 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="utf-8">
     <title>Rapport saison — {{ team.name }}</title>
     <style>
-        body { font-family: DejaVu Sans, Arial, sans-serif; color: #111; }
-        h1 { border-bottom: 2px solid #111; padding-bottom: .3em; }
-        h2 { margin-top: 1.5em; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-        th { background: #f3f3f3; }
-        .small { color: #666; font-size: 11px; }
+        /* Tactical Print Light — lisible imprimé, PDF-safe */
+        @page { margin: 2cm 1.8cm; }
+        body {
+            font-family: 'Georgia', 'DejaVu Serif', serif;
+            font-size: 11px;
+            color: #101415;
+            background: #ffffff;
+            line-height: 1.5;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #22342a;
+            border-bottom: 3px solid #7aa600;
+            padding-bottom: 6px;
+            margin: 0 0 4px;
+        }
+        h2 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #22342a;
+            margin: 24px 0 8px;
+            border-left: 3px solid #7aa600;
+            padding-left: 8px;
+        }
+        .meta {
+            font-size: 10px;
+            color: #5a6650;
+            margin: 0 0 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        thead th {
+            background: #f1f4ea;
+            color: #22342a;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 7px 8px;
+            border: 1px solid #d8dac8;
+            text-align: left;
+        }
+        tbody td {
+            padding: 6px 8px;
+            border: 1px solid #d8dac8;
+            color: #1e1c18;
+        }
+        tbody tr:nth-child(even) td {
+            background: #fafbf7;
+        }
+        .badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 2px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge--gk  { background: #e8f4ec; color: #22342a; border: 1px solid #b8d4bc; }
+        .badge--def { background: #eef4ff; color: #1a3a6b; border: 1px solid #b8c8e4; }
+        .badge--mil { background: #f1f4ea; color: #3a5a00; border: 1px solid #c4d884; }
+        .badge--att { background: #fff0ee; color: #7a1a0a; border: 1px solid #e4b8b0; }
+        .score { font-weight: 700; color: #22342a; }
+        .muted { color: #8a876e; }
+        .footer-note {
+            font-size: 9px;
+            color: #8a876e;
+            margin-top: 24px;
+            border-top: 1px solid #d8dac8;
+            padding-top: 8px;
+        }
     </style>
 </head>
 <body>
     <h1>Rapport saison — {{ team.name }}</h1>
-    <p class="small">Généré le {{ "now"|date("d/m/Y") }}</p>
+    <p class="meta">
+        Généré le {{ "now"|date("d/m/Y") }}
+        {% if team.season %} · Saison {{ team.season }}{% endif %}
+        {% if team.club %} · {{ team.club }}{% endif %}
+    </p>
 
     <h2>Effectif</h2>
     <table>
         <thead>
-            <tr><th>Numéro</th><th>Joueur</th><th>Poste</th></tr>
+            <tr>
+                <th>#</th>
+                <th>Joueur</th>
+                <th>Poste</th>
+                <th>Pied</th>
+                <th>Taille</th>
+                <th>Âge</th>
+            </tr>
         </thead>
         <tbody>
             {% for p in roster %}
+                {% set posGroup = p.position == 'GK' ? 'gk' : (p.position in ['CB','LB','RB'] ? 'def' : (p.position in ['CDM','CM','CAM'] ? 'mil' : 'att')) %}
                 <tr>
                     <td>{{ p.jerseyNumber }}</td>
-                    <td>{{ p.firstName }} {{ p.lastName }}</td>
-                    <td>{{ p.position }}</td>
+                    <td><strong>{{ p.lastName }}</strong> {{ p.firstName }}</td>
+                    <td><span class="badge badge--{{ posGroup }}">{{ p.position }}</span></td>
+                    <td>{{ p.strongFoot == 'right' ? 'Droit' : (p.strongFoot == 'left' ? 'Gauche' : 'D/G') }}</td>
+                    <td>{% if p.height %}{{ p.height }} cm{% else %}<span class="muted">—</span>{% endif %}</td>
+                    <td>{% if p.age %}{{ p.age }} ans{% else %}<span class="muted">—</span>{% endif %}</td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -37,22 +122,33 @@
     <table>
         <thead>
             <tr>
-                <th>Joueur</th><th>Matchs</th><th>Minutes</th>
-                <th>Buts</th><th>Passes D.</th>
-                <th>Jaunes</th><th>Rouges</th><th>Note moy.</th>
+                <th>Joueur</th>
+                <th>Matchs</th>
+                <th>Min.</th>
+                <th>Buts</th>
+                <th>Passes D.</th>
+                <th>Jaunes</th>
+                <th>Rouges</th>
+                <th>Note moy.</th>
             </tr>
         </thead>
         <tbody>
             {% for row in stats %}
                 <tr>
-                    <td>{{ row.player.firstName }} {{ row.player.lastName }}</td>
+                    <td><strong>{{ row.player.lastName }}</strong> {{ row.player.firstName }}</td>
                     <td>{{ row.agg.matches }}</td>
                     <td>{{ row.agg.minutes }}</td>
                     <td>{{ row.agg.goals }}</td>
                     <td>{{ row.agg.assists }}</td>
                     <td>{{ row.agg.yellow }}</td>
                     <td>{{ row.agg.red }}</td>
-                    <td>{{ row.agg.avgRating ?? '—' }}</td>
+                    <td>
+                        {% if row.agg.avgRating is not null %}
+                            <span class="score">{{ row.agg.avgRating|number_format(1) }}</span>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -61,7 +157,13 @@
     <h2>Matchs</h2>
     <table>
         <thead>
-            <tr><th>Date</th><th>Adversaire</th><th>Lieu</th><th>Statut</th><th>Score</th></tr>
+            <tr>
+                <th>Date</th>
+                <th>Adversaire</th>
+                <th>Lieu</th>
+                <th>Statut</th>
+                <th>Score</th>
+            </tr>
         </thead>
         <tbody>
             {% for f in fixtures %}
@@ -72,14 +174,16 @@
                     <td>{{ f.status }}</td>
                     <td>
                         {% if f.status == 'played' %}
-                            {{ f.scoreFor }} - {{ f.scoreAgainst }}
+                            <span class="score">{{ f.scoreFor }} – {{ f.scoreAgainst }}</span>
                         {% else %}
-                            —
+                            <span class="muted">—</span>
                         {% endif %}
                     </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <p class="footer-note">Andfield · andfield.app — Rapport généré automatiquement.</p>
 </body>
 </html>

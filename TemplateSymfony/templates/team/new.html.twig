@@ -2,34 +2,34 @@
 {% block title %}Nouvelle équipe{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="tactical-page-header">
     <div>
-        <h1 class="page-header__title">Nouvelle <em>équipe</em></h1>
-        <p class="page-header__sub">Ajoutez une équipe à votre espace</p>
+        <h1 class="tactical-page-header__title">Nouvelle <em>équipe</em></h1>
+        <p class="tactical-page-header__sub">Ajoutez une équipe à votre espace</p>
     </div>
-    <a href="{{ path('app_team_index') }}" class="btn">← Retour</a>
+    <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--outline">← Retour</a>
 </div>
-<div class="page-body">
-    <div class="form-card">
+<div class="tactical-page-body">
+    <div class="tactical-form-card">
         {{ form_start(form) }}
-            <div class="form-group">
-                <label class="form-label">{{ form_label(form.name) }}</label>
-                {{ form_widget(form.name, {attr: {class: 'form-control'}}) }}
-                <div class="form-error">{{ form_errors(form.name) }}</div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label">{{ form_label(form.name) }}</label>
+                {{ form_widget(form.name, {attr: {class: 'tactical-input'}}) }}
+                <div class="tactical-form-error">{{ form_errors(form.name) }}</div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.club) }}</label>
-                    {{ form_widget(form.club, {attr: {class: 'form-control'}}) }}
+            <div class="tactical-form-row">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.club) }}</label>
+                    {{ form_widget(form.club, {attr: {class: 'tactical-input'}}) }}
                 </div>
-                <div class="form-group">
-                    <label class="form-label">{{ form_label(form.season) }}</label>
-                    {{ form_widget(form.season, {attr: {class: 'form-control'}}) }}
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label">{{ form_label(form.season) }}</label>
+                    {{ form_widget(form.season, {attr: {class: 'tactical-input'}}) }}
                 </div>
             </div>
-            <div class="form-actions">
-                <button class="btn btn--filled" type="submit">Créer l'équipe</button>
-                <a href="{{ path('app_team_index') }}" class="btn">Annuler</a>
+            <div class="tactical-form-actions">
+                <button class="tactical-btn tactical-btn--primary" type="submit">Créer l'équipe</button>
+                <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--outline">Annuler</a>
             </div>
         {{ form_end(form) }}
     </div>
