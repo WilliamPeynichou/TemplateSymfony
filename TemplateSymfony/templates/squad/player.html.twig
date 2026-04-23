@@ -1,0 +1,159 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}{{ player.fullName }} — Fiche FM{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/squad.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ importmap('app') }}
+    {{ importmap('squad') }}
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Fiche <em>{{ player.fullName }}</em></h1>
+        <p class="tactical-page-header__sub">#{{ player.number }} · {{ player.position }} · {{ team.name }}</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+        <a href="{{ path('app_squad_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">← Effectif</a>
+    </div>
+</div>
+
+<div class="tactical-page-body fm-player-page"
+     data-controller="player-card"
+     data-player-card-save-url-value="{{ path('app_squad_player_attributes_save', {teamId: team.id, playerId: player.id}) }}">
+
+    <div class="fm-player-grid">
+        {# ── Colonne gauche — identité + état ── #}
+        <section class="fm-player-col fm-player-col--left">
+            <div class="fm-player-identity">
+                {% if player.photo %}
+                    <img src="/uploads/players/{{ player.photo }}" class="fm-player-identity__photo" alt="">
+                {% else %}
+                    <div class="fm-player-identity__photo fm-player-identity__photo--placeholder">
+                        {{ player.firstName|slice(0,1) }}{{ player.lastName|slice(0,1) }}
+                    </div>
+                {% endif %}
+                <div>
+                    <div class="fm-player-identity__name">{{ player.fullName }}</div>
+                    <div class="fm-player-identity__meta">
+                        {{ player.age ? player.age ~ ' ans' : '—' }}
+                        · {{ player.strongFoot == 'right' ? 'Pied droit' : (player.strongFoot == 'left' ? 'Pied gauche' : (player.strongFoot == 'both' ? 'Les deux' : '—')) }}
+                        {% if player.height %} · {{ player.height }} cm{% endif %}
+                        {% if player.weight %} · {{ player.weight }} kg{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="fm-player-state">
+                <label class="fm-state-field">
+                    <span>Forme : <strong data-player-card-target="conditionValue">{{ attrs.condition }}</strong>%</span>
+                    <input type="range" min="0" max="100" value="{{ attrs.condition }}"
+                           data-player-card-target="condition" data-action="input->player-card#onCondition">
+                </label>
+                <label class="fm-state-field">
+                    <span>Potentiel : <strong data-player-card-target="potentialValue">{{ attrs.potentialAbility }}</strong>/100</span>
+                    <input type="range" min="1" max="100" value="{{ attrs.potentialAbility }}"
+                           data-player-card-target="potential" data-action="input->player-card#onPotential">
+                </label>
+                <div class="fm-state-field">
+                    <span>Morale</span>
+                    <div class="fm-morale-picker">
+                        {% for label, value in {'Faible':'poor','Correct':'okay','Bon':'good','Excellent':'excellent'} %}
+                            <button type="button"
+                                    class="fm-morale fm-morale--{{ value }} {{ attrs.morale == value ? 'is-active' : '' }}"
+                                    data-value="{{ value }}"
+                                    data-action="click->player-card#onMorale">
+                                {{ label }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="fm-player-note">
+                    <span class="fm-player-note__label">Current Ability (note)</span>
+                    <span class="fm-rating fm-rating--{{ attrs.getCurrentAbility(player.position) >= 75 ? 'top' : (attrs.getCurrentAbility(player.position) >= 55 ? 'mid' : 'low') }}"
+                          data-player-card-target="rating">
+                        {{ attrs.getCurrentAbility(player.position) }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="fm-player-saveline">
+                <span class="fm-player-saveline__status" data-player-card-target="status"></span>
+                <button class="tactical-btn tactical-btn--primary tactical-btn--sm"
+                        data-action="click->player-card#save">Enregistrer</button>
+            </div>
+        </section>
+
+        {# ── Colonne centrale — attributs ── #}
+        <section class="fm-player-col fm-player-col--center">
+            {% set groups = {
+                'Technique'   : ('TECHNICAL_ATTRIBUTES'),
+                'Mental'      : ('MENTAL_ATTRIBUTES'),
+                'Physique'    : ('PHYSICAL_ATTRIBUTES'),
+                'Gardien'     : ('GOALKEEPING_ATTRIBUTES')
+            } %}
+
+            {% for title, constName in groups %}
+                {% set attrMap = constant('App\\Entity\\PlayerAttributes::' ~ constName) %}
+                {% set shouldShow = title != 'Gardien' or player.positionGroup == 'GK' %}
+                {% if shouldShow %}
+                    <div class="fm-attr-block">
+                        <h3 class="fm-attr-block__title">{{ title }}</h3>
+                        <div class="fm-attr-grid">
+                            {% for key, label in attrMap %}
+                                {% set value = attrs.get(key) %}
+                                <div class="fm-attr"
+                                     data-action="click->player-card#openEditor"
+                                     data-attr="{{ key }}"
+                                     data-label="{{ label }}">
+                                    <span class="fm-attr__label">{{ label }}</span>
+                                    <span class="fm-attr__value fm-attr__value--{{ value >= 15 ? 'top' : (value >= 10 ? 'mid' : 'low') }}"
+                                          data-player-card-target="attr"
+                                          data-attr="{{ key }}">{{ value }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </section>
+
+        {# ── Colonne droite — suitability des rôles ── #}
+        <section class="fm-player-col fm-player-col--right">
+            <h3 class="fm-attr-block__title">Suitability par rôle</h3>
+            <p class="fm-player-help">Aptitude (0-100) calculée à partir des attributs clés.</p>
+            <ul class="fm-suitability-list">
+                {% for key, row in suitabilities %}
+                    <li class="fm-suitability">
+                        <span class="fm-suitability__label">{{ row.label }}</span>
+                        <div class="fm-suitability__bar">
+                            <div class="fm-suitability__fill fm-suitability__fill--{{ row.suitability >= 75 ? 'top' : (row.suitability >= 55 ? 'mid' : 'low') }}"
+                                 style="width:{{ row.suitability }}%"></div>
+                        </div>
+                        <span class="fm-suitability__value">{{ row.suitability }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+
+    {# ── Inline editor modal (minimal) ── #}
+    <div class="fm-attr-editor" data-player-card-target="editor" hidden>
+        <div class="fm-attr-editor__backdrop" data-action="click->player-card#closeEditor"></div>
+        <div class="fm-attr-editor__panel">
+            <div class="fm-attr-editor__head">
+                <strong data-player-card-target="editorTitle">—</strong>
+                <button type="button" class="fm-attr-editor__close" data-action="click->player-card#closeEditor">×</button>
+            </div>
+            <div class="fm-attr-editor__body">
+                <input type="range" min="1" max="20" data-player-card-target="editorRange" data-action="input->player-card#onEditorChange">
+                <div class="fm-attr-editor__value" data-player-card-target="editorValue">—</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

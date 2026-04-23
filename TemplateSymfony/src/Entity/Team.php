@@ -40,6 +40,9 @@ class Team
     #[ORM\OneToMany(targetEntity: MatchNote::class, mappedBy: 'team', orphanRemoval: true, cascade: ['remove'])]
     private Collection $matchNotes;
 
+    #[ORM\OneToMany(targetEntity: TacticalStrategy::class, mappedBy: 'team', orphanRemoval: true, cascade: ['persist', 'remove'])]
+    private Collection $strategies;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -48,8 +51,11 @@ class Team
         $this->players    = new ArrayCollection();
         $this->plans      = new ArrayCollection();
         $this->matchNotes = new ArrayCollection();
+        $this->strategies = new ArrayCollection();
         $this->createdAt  = new \DateTimeImmutable();
     }
+
+    public function getStrategies(): Collection { return $this->strategies; }
 
     public function getId(): ?int { return $this->id; }
 

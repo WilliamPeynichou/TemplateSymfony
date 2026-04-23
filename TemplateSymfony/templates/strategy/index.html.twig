@@ -1,0 +1,127 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Stratégies tactiques — {{ team.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/strategy.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Stratégies <em>{{ team.name }}</em></h1>
+        <p class="tactical-page-header__sub">{{ strategies|length }} stratégie{{ strategies|length > 1 ? 's' : '' }} · Préparez plusieurs plans de jeu</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+        <a href="{{ path('app_squad_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">Effectif FM</a>
+    </div>
+</div>
+
+<div class="tactical-page-body">
+
+    {# ── Création rapide ── #}
+    <form class="fm-strategy-new" method="post" action="{{ path('app_strategy_new', {teamId: team.id}) }}">
+        <div class="fm-strategy-new__head">
+            <strong>Nouvelle stratégie</strong>
+            <span>Choisissez une formation de départ, vous pourrez tout personnaliser ensuite.</span>
+        </div>
+        <div class="fm-strategy-new__body">
+            <input type="text" name="name" placeholder="Nom (ex: Plan A - Équilibré)" class="fm-input">
+            <div class="fm-formation-picker">
+                {% for key, f in formations %}
+                    <label class="fm-formation-card">
+                        <input type="radio" name="formation" value="{{ key }}" {{ loop.first ? 'checked' : '' }}>
+                        <span class="fm-formation-card__box">
+                            <span class="fm-formation-card__label">{{ f.label }}</span>
+                            <span class="fm-formation-card__dots">
+                                {% for slot in f.slots %}
+                                    <span class="fm-formation-card__dot fm-formation-card__dot--{{ slot.code|lower }}"
+                                          style="left:{{ slot.x }}%;top:{{ slot.y }}%"></span>
+                                {% endfor %}
+                            </span>
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+            <button type="submit" class="tactical-btn tactical-btn--primary">Créer la stratégie</button>
+        </div>
+    </form>
+
+    {# ── Liste stratégies ── #}
+    {% if strategies|length == 0 %}
+        <div class="tactical-card tactical-card--empty">
+            <p>Aucune stratégie enregistrée. Créez votre premier plan ci-dessus.</p>
+        </div>
+    {% else %}
+        <div class="fm-strategy-grid">
+            {% for s in strategies %}
+                <article class="fm-strategy-card {{ s.isDefault ? 'fm-strategy-card--default' : '' }}">
+                    <header class="fm-strategy-card__head">
+                        <div>
+                            <div class="fm-strategy-card__name">{{ s.name }}</div>
+                            <div class="fm-strategy-card__formation">{{ s.formation }} · {{ s.labelFor('mentality') }}</div>
+                        </div>
+                        {% if s.isDefault %}
+                            <span class="tactical-badge tactical-badge--lime">Par défaut</span>
+                        {% endif %}
+                    </header>
+
+                    <div class="fm-strategy-card__pitch">
+                        <div class="fm-strategy-card__pitch-bg"></div>
+                        {% for slot in s.slots %}
+                            <span class="fm-strategy-card__dot fm-strategy-card__dot--{{ slot.positionGroup|lower }}"
+                                  style="left:{{ slot.posX }}%;top:{{ slot.posY }}%"
+                                  title="{{ slot.label }} · {{ slot.role }}">{{ slot.player ? slot.player.number : slot.label }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="fm-strategy-card__tags">
+                        <span class="fm-tag">Pressing : {{ s.labelFor('pressingIntensity') }}</span>
+                        <span class="fm-tag">Ligne : {{ s.labelFor('defensiveLine') }}</span>
+                        <span class="fm-tag">Tempo : {{ s.labelFor('tempo') }}</span>
+                        <span class="fm-tag">Largeur : {{ s.labelFor('width') }}</span>
+                    </div>
+
+                    <footer class="fm-strategy-card__foot">
+                        <a href="{{ path('app_strategy_edit', {teamId: team.id, id: s.id}) }}" class="tactical-btn tactical-btn--primary tactical-btn--sm">Éditer</a>
+                        {% if not s.isDefault %}
+                            <form method="post" action="{{ path('app_strategy_set_default', {teamId: team.id, id: s.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('default_strategy_' ~ s.id) }}">
+                                <button class="tactical-btn tactical-btn--outline tactical-btn--sm">Par défaut</button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{{ path('app_strategy_clone', {teamId: team.id, id: s.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('clone_strategy_' ~ s.id) }}">
+                            <button class="tactical-btn tactical-btn--ghost tactical-btn--sm">Dupliquer</button>
+                        </form>
+                        <form method="post" action="{{ path('app_strategy_delete', {teamId: team.id, id: s.id}) }}"
+                              onsubmit="return confirm('Supprimer {{ s.name }} ?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_strategy_' ~ s.id) }}">
+                            <button class="tactical-btn tactical-btn--danger tactical-btn--sm">×</button>
+                        </form>
+                    </footer>
+                </article>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# ── Statistiques formation ── #}
+    {% if usage|length > 0 %}
+        <section class="fm-usage">
+            <h3 class="fm-usage__title">Formations les plus utilisées</h3>
+            <div class="fm-usage__list">
+                {% for row in usage %}
+                    <div class="fm-usage__row">
+                        <span class="fm-usage__name">{{ row.formation }}</span>
+                        <div class="fm-usage__bar">
+                            <div class="fm-usage__fill" style="width:{{ row.percent }}%"></div>
+                        </div>
+                        <span class="fm-usage__value">{{ row.percent }}% · {{ row.uses }} utilisations</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -32,7 +32,13 @@
                         <span style="color:var(--secondary-container)">{{ team.players|length }} joueur{{ team.players|length > 1 ? 's' : '' }}</span>
                     </div>
                     <div class="tactical-card__actions">
-                        <a href="{{ path('app_composition_index', {id: team.id}) }}" class="tactical-btn tactical-btn--primary tactical-btn--sm">
+                        <a href="{{ path('app_squad_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--primary tactical-btn--sm">
+                            Vue FM
+                        </a>
+                        <a href="{{ path('app_strategy_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">
+                            Stratégies
+                        </a>
+                        <a href="{{ path('app_composition_index', {id: team.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">
                             Composition
                         </a>
                         <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">
