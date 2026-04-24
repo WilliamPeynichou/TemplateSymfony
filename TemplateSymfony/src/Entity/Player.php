@@ -91,12 +91,37 @@ class Player
     #[ORM\JoinColumn(nullable: false)]
     private ?Team $team = null;
 
+    #[ORM\OneToOne(mappedBy: 'player', targetEntity: PlayerAttributes::class, cascade: ['persist', 'remove'])]
+    private ?PlayerAttributes $attributes = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public function getAttributes(): ?PlayerAttributes { return $this->attributes; }
+
+    public function setAttributes(?PlayerAttributes $attributes): static
+    {
+        if ($attributes !== null && $attributes->getPlayer() !== $this) {
+            $attributes->setPlayer($this);
+        }
+        $this->attributes = $attributes;
+        return $this;
+    }
+
+    public function getPositionGroup(): string
+    {
+        return match ($this->position) {
+            'GK' => 'GK',
+            'CB', 'LB', 'RB' => 'DEF',
+            'CDM', 'CM', 'CAM' => 'MID',
+            'LW', 'RW', 'ST' => 'ATT',
+            default => 'MID',
+        };
     }
 
     public function getId(): ?int { return $this->id; }

@@ -1,0 +1,182 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Effectif FM — {{ team.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/squad.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ importmap('app') }}
+    {{ importmap('squad') }}
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Gestion d'effectif <em>{{ team.name }}</em></h1>
+        <p class="tactical-page-header__sub">Vue Football Manager — attributs, condition, morale, suitability rôles</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+        <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">Effectif classique</a>
+        <a href="{{ path('app_strategy_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--primary">Stratégies tactiques</a>
+    </div>
+</div>
+
+<div class="tactical-page-body" data-controller="squad" data-squad-team-id-value="{{ team.id }}">
+
+    {# ───── Dashboard KPIs ───── #}
+    <div class="fm-kpi-grid">
+        <div class="fm-kpi">
+            <span class="fm-kpi__label">Effectif total</span>
+            <span class="fm-kpi__value">{{ summary.size }}</span>
+            <span class="fm-kpi__sub">{{ summary.available }} dispo · {{ summary.injured }} blessés · {{ summary.absent }} absents</span>
+        </div>
+        <div class="fm-kpi">
+            <span class="fm-kpi__label">Note moyenne</span>
+            <span class="fm-kpi__value">{{ summary.avgCurrentAbility }}<span class="fm-kpi__unit">/100</span></span>
+            <span class="fm-kpi__sub">Pondérée par poste</span>
+        </div>
+        <div class="fm-kpi">
+            <span class="fm-kpi__label">Morale</span>
+            <div class="fm-kpi__morale">
+                {% for key, count in summary.morale %}
+                    {% if count > 0 %}
+                        <span class="fm-morale fm-morale--{{ key }}" title="{{ key|capitalize }}">{{ count }}</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="fm-kpi">
+            <span class="fm-kpi__label">Forme</span>
+            <span class="fm-kpi__value">{{ summary.lowCondition|length }}</span>
+            <span class="fm-kpi__sub">Condition &lt; 70%</span>
+        </div>
+    </div>
+
+    {# ───── Profondeur par ligne ───── #}
+    <div class="fm-depth-grid">
+        {% for group, label in {'GK':'Gardiens', 'DEF':'Défenseurs', 'MID':'Milieux', 'ATT':'Attaquants'} %}
+            {% set g = summary.byPositionGroup[group] %}
+            <div class="fm-depth-card fm-depth-card--{{ group|lower }}">
+                <div class="fm-depth-card__head">
+                    <span class="fm-depth-card__label">{{ label }}</span>
+                    <span class="fm-depth-card__count">{{ g.count }} joueurs</span>
+                </div>
+                <div class="fm-depth-card__avg">Note moyenne : <strong>{{ g.avgRating }}</strong></div>
+                <ul class="fm-depth-card__list">
+                    {% for p in g.players|slice(0, 4) %}
+                        <li>
+                            <a href="{{ path('app_squad_player', {teamId: team.id, playerId: p.id}) }}">{{ p.fullName }}</a>
+                            <span class="fm-rating fm-rating--{{ p.rating >= 75 ? 'top' : (p.rating >= 55 ? 'mid' : 'low') }}">{{ p.rating }}</span>
+                        </li>
+                    {% else %}
+                        <li class="fm-depth-card__empty">Aucun joueur</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+
+    {# ───── Alertes ───── #}
+    {% if summary.lowCondition|length > 0 or summary.injured > 0 %}
+        <div class="fm-alerts">
+            <span class="fm-alerts__title">Alertes</span>
+            <div class="fm-alerts__list">
+                {% for p in summary.lowCondition %}
+                    <span class="fm-alert fm-alert--warn">
+                        <strong>{{ p.fullName }}</strong> — condition {{ p.condition }}%
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    {# ───── Filtres + table effectif ───── #}
+    <div class="fm-squad-toolbar">
+        <div class="fm-filter-group">
+            <button class="fm-filter fm-filter--active" data-action="click->squad#filter" data-group="all">Tous</button>
+            <button class="fm-filter" data-action="click->squad#filter" data-group="GK">GK</button>
+            <button class="fm-filter" data-action="click->squad#filter" data-group="DEF">Défense</button>
+            <button class="fm-filter" data-action="click->squad#filter" data-group="MID">Milieu</button>
+            <button class="fm-filter" data-action="click->squad#filter" data-group="ATT">Attaque</button>
+        </div>
+        <input type="search" class="fm-search" placeholder="Rechercher un joueur…" data-action="input->squad#search">
+    </div>
+
+    <div class="tactical-table-wrap">
+        <table class="tactical-table fm-squad-table">
+            <thead>
+                <tr>
+                    <th data-action="click->squad#sort" data-field="number">#</th>
+                    <th data-action="click->squad#sort" data-field="name">Joueur</th>
+                    <th data-action="click->squad#sort" data-field="position">Poste</th>
+                    <th data-action="click->squad#sort" data-field="rating">Note</th>
+                    <th data-action="click->squad#sort" data-field="potential">Pot.</th>
+                    <th data-action="click->squad#sort" data-field="condition">Forme</th>
+                    <th>Moral</th>
+                    <th>Statut</th>
+                    <th>Âge</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody data-squad-target="tbody">
+                {% for p in players %}
+                    {% set attrs = p.attributes %}
+                    {% set rating = attrs ? attrs.getCurrentAbility(p.position) : 0 %}
+                    {% set posGroup = p.positionGroup %}
+                    <tr data-group="{{ posGroup }}"
+                        data-name="{{ (p.fullName)|lower }}"
+                        data-number="{{ p.number }}"
+                        data-position="{{ p.position }}"
+                        data-rating="{{ rating }}"
+                        data-potential="{{ attrs ? attrs.potentialAbility : 0 }}"
+                        data-condition="{{ attrs ? attrs.condition : 100 }}">
+                        <td><span class="tactical-badge tactical-badge--primary">{{ p.number }}</span></td>
+                        <td>
+                            <a href="{{ path('app_squad_player', {teamId: team.id, playerId: p.id}) }}" class="fm-player-link">
+                                {% if p.photo %}
+                                    <img src="/uploads/players/{{ p.photo }}" alt="" class="fm-player-link__photo">
+                                {% else %}
+                                    <span class="fm-player-link__avatar fm-player-link__avatar--{{ posGroup|lower }}">{{ p.firstName|slice(0,1) }}{{ p.lastName|slice(0,1) }}</span>
+                                {% endif %}
+                                <strong>{{ p.fullName }}</strong>
+                            </a>
+                        </td>
+                        <td><span class="tactical-chip-pos tactical-chip-pos--{{ posGroup|lower }}">{{ p.position }}</span></td>
+                        <td>
+                            {% if attrs %}
+                                <span class="fm-rating fm-rating--{{ rating >= 75 ? 'top' : (rating >= 55 ? 'mid' : 'low') }}">{{ rating }}</span>
+                            {% else %}
+                                <span class="fm-rating fm-rating--none" title="Attributs non renseignés">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ attrs ? attrs.potentialAbility : '—' }}</td>
+                        <td>
+                            {% if attrs %}
+                                <div class="fm-condition-bar" title="{{ attrs.condition }}% de forme">
+                                    <div class="fm-condition-bar__fill fm-condition-bar__fill--{{ attrs.condition >= 80 ? 'high' : (attrs.condition >= 50 ? 'mid' : 'low') }}"
+                                         style="width:{{ attrs.condition }}%"></div>
+                                </div>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if attrs %}
+                                <span class="fm-morale fm-morale--{{ attrs.morale }}">{{ attrs.moraleLabel }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% set statusClass = p.status == 'present' ? 'tactical-badge--lime' : (p.status == 'injured' ? 'tactical-btn--danger' : '') %}
+                            <span class="tactical-badge {{ statusClass }}">{{ p.statusLabel }}</span>
+                        </td>
+                        <td>{{ p.age ? p.age ~ ' ans' : '—' }}</td>
+                        <td>
+                            <a href="{{ path('app_squad_player', {teamId: team.id, playerId: p.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">Fiche</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

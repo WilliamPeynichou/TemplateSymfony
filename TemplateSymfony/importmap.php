@@ -32,6 +32,14 @@ return [
         'path' => './assets/match.js',
         'entrypoint' => true,
     ],
+    'squad' => [
+        'path' => './assets/squad.js',
+        'entrypoint' => true,
+    ],
+    'strategy' => [
+        'path' => './assets/strategy.js',
+        'entrypoint' => true,
+    ],
     'agent-chat' => [
         'path' => './assets/agent-chat.js',
         'entrypoint' => true,
