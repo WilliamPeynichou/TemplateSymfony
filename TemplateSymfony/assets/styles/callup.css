@@ -1,0 +1,217 @@
+/* ═══════════════════════════════════════════════════════════════
+   CALLUP — convocation match
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Compteurs */
+.callup-counters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.callup-counter {
+    font-size: 0.8125rem;
+    color: var(--on-surface-variant);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.callup-counter strong {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--secondary-container);
+}
+
+.callup-counter--absent strong { color: var(--error, #ef4444); }
+.callup-counter--muted strong  { color: var(--on-surface-variant); }
+
+/* Grille 4 colonnes */
+.callup-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .callup-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+    .callup-grid { grid-template-columns: 1fr; }
+}
+
+/* Colonnes */
+.callup-col {
+    background: var(--surface-variant, rgba(255,255,255,0.04));
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid transparent;
+    transition: border-color 0.15s;
+}
+
+.callup-col--muted  { opacity: .75; }
+.callup-col--absent { border-color: rgba(239,68,68,.2); }
+
+.callup-col__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.875rem;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.callup-col__title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--on-surface-variant);
+}
+
+.callup-col__hint {
+    font-size: 0.7rem;
+    color: var(--on-surface-variant);
+    opacity: .6;
+}
+
+.callup-col__list {
+    padding: 0.5rem;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    transition: background 0.15s;
+}
+
+.callup-col__list--over {
+    background: rgba(199,243,0,.06);
+}
+
+/* Cartes joueur */
+.callup-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    background: var(--surface, rgba(255,255,255,0.05));
+    border-radius: 8px;
+    cursor: grab;
+    border: 1.5px solid transparent;
+    transition: border-color 0.12s, opacity 0.12s, box-shadow 0.12s;
+    user-select: none;
+}
+
+.callup-card:hover { border-color: rgba(255,255,255,0.12); }
+
+.callup-card--dragging {
+    opacity: 0.45;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+
+.callup-card__num {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--on-surface-variant);
+}
+
+.callup-card__info { flex: 1; min-width: 0; }
+
+.callup-card__name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.callup-card__pos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.2rem;
+}
+
+.callup-card__badge {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.callup-card__badge--pos {
+    background: rgba(255,255,255,0.1);
+    color: var(--on-surface-variant);
+}
+
+.callup-card__badge--reason {
+    background: rgba(199,243,0,0.15);
+    color: var(--secondary-container);
+}
+
+.callup-card__badge--status.callup-card__badge--injured {
+    background: rgba(239,68,68,.15);
+    color: #f87171;
+}
+
+.callup-card__badge--status.callup-card__badge--suspended {
+    background: rgba(251,191,36,.15);
+    color: #fbbf24;
+}
+
+.callup-card__menu {
+    background: none;
+    border: none;
+    color: var(--on-surface-variant);
+    opacity: .4;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: opacity .15s;
+    flex-shrink: 0;
+}
+
+.callup-card__menu:hover { opacity: 1; }
+
+/* Panneau motif contextuel */
+.callup-reason-panel {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 200;
+    width: 280px;
+}
+
+.callup-reason-panel__inner {
+    background: var(--surface-container, #1e1e1e);
+    border: 1.5px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.callup-reason-panel__title {
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+/* Indicateur de sauvegarde */
+.callup-save-indicator {
+    font-size: 0.75rem;
+    color: var(--on-surface-variant);
+    opacity: .7;
+}

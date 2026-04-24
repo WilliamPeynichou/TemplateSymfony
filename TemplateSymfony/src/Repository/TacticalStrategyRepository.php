@@ -20,6 +20,19 @@ class TacticalStrategyRepository extends ServiceEntityRepository
     }
 
     /** @return TacticalStrategy[] */
+    public function findByTeamAndMode(Team $team, string $mode): array
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.team = :t')
+            ->andWhere('s.mode = :mode')
+            ->setParameter('t', $team)
+            ->setParameter('mode', $mode)
+            ->orderBy('s.updatedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return TacticalStrategy[] */
     public function findByTeam(Team $team): array
     {
         return $this->createQueryBuilder('s')

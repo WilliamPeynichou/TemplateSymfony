@@ -34,9 +34,6 @@ class Team
     #[ORM\OneToOne(targetEntity: Composition::class, mappedBy: 'team', cascade: ['persist', 'remove'])]
     private ?Composition $composition = null;
 
-    #[ORM\OneToMany(targetEntity: Plan::class, mappedBy: 'team', orphanRemoval: true, cascade: ['remove'])]
-    private Collection $plans;
-
     #[ORM\OneToMany(targetEntity: MatchNote::class, mappedBy: 'team', orphanRemoval: true, cascade: ['remove'])]
     private Collection $matchNotes;
 
@@ -49,7 +46,6 @@ class Team
     public function __construct()
     {
         $this->players    = new ArrayCollection();
-        $this->plans      = new ArrayCollection();
         $this->matchNotes = new ArrayCollection();
         $this->strategies = new ArrayCollection();
         $this->createdAt  = new \DateTimeImmutable();
@@ -75,8 +71,6 @@ class Team
 
     public function getComposition(): ?Composition { return $this->composition; }
     public function setComposition(?Composition $composition): static { $this->composition = $composition; return $this; }
-
-    public function getPlans(): Collection { return $this->plans; }
 
     public function getMatchNotes(): Collection { return $this->matchNotes; }
 

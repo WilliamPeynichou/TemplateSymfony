@@ -1,29 +1,101 @@
 {% extends 'layout/app.html.twig' %}
-{% block title %}Présences — {{ eventTitle }}{% endblock %}
+{% block title %}Feuille de présence — {{ eventTitle }}{% endblock %}
 
 {% block content %}
 <div class="tactical-page-header">
     <div>
-        <h1 class="tactical-page-header__title">Présences <em>{{ eventType == 'fixture' ? 'match' : 'séance' }}</em></h1>
+        <h1 class="tactical-page-header__title">Feuille de présence <em>{{ eventType == 'fixture' ? 'match' : 'séance' }}</em></h1>
         <p class="tactical-page-header__sub">{{ eventTitle }}{% if eventSubtitle %} · {{ eventSubtitle }}{% endif %}</p>
     </div>
     <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">← Calendrier</a>
 </div>
 
 <div class="tactical-page-body">
-    <form method="post" class="tactical-form-card">
+    <form method="post"
+          class="tactical-form-card attendance-sheet"
+          data-controller="attendance">
         <input type="hidden" name="_token" value="{{ csrf_token(csrfTokenId) }}">
 
         {% if players|length == 0 %}
             <p class="tactical-card__sub">Aucun joueur dans l'effectif.</p>
         {% else %}
-            <div class="tactical-table-wrap">
+            <div class="attendance-sheet__topbar">
+                <div>
+                    <div class="tactical-card__title" style="margin-bottom:0.25rem;">{{ eventType == 'fixture' ? 'Présences du match' : 'Présences de la séance' }}</div>
+                    <p class="tactical-card__sub" style="margin-bottom:0;">Renseigne rapidement la présence de chaque joueur, puis enregistre la feuille.</p>
+                </div>
+
+                <div class="attendance-sheet__bulk-actions">
+                    <button type="button"
+                            class="tactical-btn tactical-btn--outline tactical-btn--sm"
+                            data-action="attendance#markAllPresent">
+                        Tous présents
+                    </button>
+                    <button type="button"
+                            class="tactical-btn tactical-btn--outline tactical-btn--sm"
+                            data-action="attendance#clearReasons">
+                        Effacer les motifs
+                    </button>
+                </div>
+            </div>
+
+            <div class="attendance-sheet__summary">
+                <article class="attendance-sheet__summary-card">
+                    <span class="attendance-sheet__summary-label">Effectif</span>
+                    <strong class="attendance-sheet__summary-value" data-attendance-target="playersCount">{{ totals.players }}</strong>
+                </article>
+                <article class="attendance-sheet__summary-card attendance-sheet__summary-card--present">
+                    <span class="attendance-sheet__summary-label">Présents</span>
+                    <strong class="attendance-sheet__summary-value" data-attendance-target="presentCount">{{ totals.present }}</strong>
+                </article>
+                <article class="attendance-sheet__summary-card attendance-sheet__summary-card--late">
+                    <span class="attendance-sheet__summary-label">Retards</span>
+                    <strong class="attendance-sheet__summary-value" data-attendance-target="lateCount">{{ totals.late }}</strong>
+                </article>
+                <article class="attendance-sheet__summary-card attendance-sheet__summary-card--absent">
+                    <span class="attendance-sheet__summary-label">Absents</span>
+                    <strong class="attendance-sheet__summary-value" data-attendance-target="absentCount">{{ totals.absent }}</strong>
+                </article>
+                <article class="attendance-sheet__summary-card attendance-sheet__summary-card--excused">
+                    <span class="attendance-sheet__summary-label">Justifiés</span>
+                    <strong class="attendance-sheet__summary-value" data-attendance-target="excusedCount">{{ totals.excused }}</strong>
+                </article>
+            </div>
+
+            <div class="attendance-sheet__filters" role="group" aria-label="Filtrer la feuille de présence">
+                <button type="button"
+                        class="attendance-sheet__filter-btn attendance-sheet__filter-btn--active"
+                        data-action="attendance#filterRows"
+                        data-filter="all">
+                    Tous
+                </button>
+                <button type="button"
+                        class="attendance-sheet__filter-btn"
+                        data-action="attendance#filterRows"
+                        data-filter="absent">
+                    Absents
+                </button>
+                <button type="button"
+                        class="attendance-sheet__filter-btn"
+                        data-action="attendance#filterRows"
+                        data-filter="late">
+                    Retards
+                </button>
+                <button type="button"
+                        class="attendance-sheet__filter-btn"
+                        data-action="attendance#filterRows"
+                        data-filter="excused">
+                    Justifiés
+                </button>
+            </div>
+
+            <div class="attendance-sheet__table tactical-table-wrap">
                 <table class="tactical-table">
                     <thead>
                         <tr>
                             <th>#</th>
                             <th>Joueur</th>
-                            <th>Statut joueur</th>
+                            <th>Disponibilité</th>
                             <th>Présence</th>
                             <th>Motif</th>
                         </tr>
@@ -32,30 +104,55 @@
                         {% for player in players %}
                             {% set attendance = attendanceMap[player.id] ?? null %}
                             {% set selectedStatus = attendance ? attendance.status : 'present' %}
-                            <tr>
+                            {% set requiresReason = selectedStatus in ['absent', 'excused'] %}
+                            {% set statusClass = player.status == 'present' ? 'tactical-badge--lime' : (player.status == 'injured' ? 'tactical-btn--danger' : '') %}
+                            <tr class="attendance-sheet__row"
+                                data-attendance-target="row"
+                                data-player-id="{{ player.id }}"
+                                data-status="{{ selectedStatus }}">
                                 <td><span class="tactical-badge tactical-badge--primary">{{ player.number }}</span></td>
                                 <td>
-                                    <strong style="font-weight:600;">{{ player.fullName }}</strong>
-                                    <div style="color:var(--on-surface-variant);font-size:var(--text-label-sm);">{{ player.position }}</div>
+                                    <strong class="attendance-sheet__player-name">{{ player.fullName }}</strong>
+                                    <div class="attendance-sheet__player-meta">{{ player.position }}</div>
                                 </td>
                                 <td>
-                                    <span class="tactical-badge {{ player.status == 'present' ? 'tactical-badge--lime' : '' }}">{{ player.statusLabel }}</span>
+                                    <span class="tactical-badge {{ statusClass }}">{{ player.statusLabel }}</span>
                                     {% if player.statusReason %}
-                                        <div style="margin-top:0.35rem;color:var(--on-surface-variant);font-size:var(--text-label-sm);max-width:22ch;">{{ player.statusReason }}</div>
+                                        <div class="attendance-sheet__availability-note">{{ player.statusReason }}</div>
                                     {% endif %}
                                 </td>
-                                <td style="min-width:190px;">
-                                    <select class="tactical-input" name="attendance[{{ player.id }}][status]">
+                                <td>
+                                    <input type="hidden"
+                                           name="attendance[{{ player.id }}][status]"
+                                           value="{{ selectedStatus }}"
+                                           data-attendance-target="statusInput">
+                                    <div class="attendance-sheet__status-group" role="group" aria-label="Présence de {{ player.fullName }}">
                                         {% for label, value in statuses %}
-                                            <option value="{{ value }}" {{ selectedStatus == value ? 'selected' : '' }}>{{ label }}</option>
+                                            <button type="button"
+                                                    class="attendance-sheet__status-btn {{ selectedStatus == value ? 'attendance-sheet__status-btn--active' : '' }}"
+                                                    data-action="attendance#selectStatus"
+                                                    data-status="{{ value }}">
+                                                {{ label }}
+                                            </button>
                                         {% endfor %}
-                                    </select>
+                                    </div>
                                 </td>
                                 <td>
-                                    <input class="tactical-input"
-                                           name="attendance[{{ player.id }}][reason]"
-                                           value="{{ attendance ? attendance.reason : '' }}"
-                                           placeholder="Motif si absent">
+                                    <div class="attendance-sheet__reason"
+                                         {{ not requiresReason ? 'hidden' : '' }}
+                                         data-attendance-target="reasonWrap">
+                                        <input class="tactical-input"
+                                               name="attendance[{{ player.id }}][reason]"
+                                               value="{{ attendance ? attendance.reason : '' }}"
+                                               placeholder="Motif"
+                                               data-attendance-target="reasonInput"
+                                               {{ not requiresReason ? 'disabled' : '' }}>
+                                    </div>
+                                    <span class="attendance-sheet__reason-placeholder"
+                                          {{ requiresReason ? 'hidden' : '' }}
+                                          data-attendance-target="reasonPlaceholder">
+                                        Aucun motif requis
+                                    </span>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -64,8 +161,8 @@
             </div>
 
             <div class="tactical-form-actions" style="margin-top:var(--space-md);">
-                <button type="submit" class="tactical-btn tactical-btn--primary">Enregistrer les présences</button>
-                <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Annuler</a>
+                <button type="submit" class="tactical-btn tactical-btn--primary">Enregistrer la feuille</button>
+                <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Retour calendrier</a>
             </div>
         {% endif %}
     </form>

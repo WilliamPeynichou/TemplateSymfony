@@ -1,0 +1,161 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Convocation — {{ fixture.opponent }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/callup.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Convocation <em>vs {{ fixture.opponent }}</em></h1>
+        <p class="tactical-page-header__sub">
+            {{ fixture.matchDate|date('d/m/Y H:i') }} ·
+            {{ fixture.competition ?? 'Match' }} ·
+            {{ fixture.venue == 'home' ? 'Domicile' : (fixture.venue == 'away' ? 'Extérieur' : 'Neutre') }}
+        </p>
+    </div>
+    <div style="display:flex;gap:0.75rem;align-items:center;">
+        <span class="callup-save-indicator" id="callupSaveIndicator"></span>
+        <a href="{{ path('app_match_prepare') }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">← Retour</a>
+    </div>
+</div>
+
+<div class="tactical-page-body"
+     data-controller="callup"
+     data-callup-save-url-value="{{ path('app_callup_save', {fixtureId: fixture.id}) }}"
+     data-callup-reasons-value="{{ reasons|json_encode }}">
+
+    {# ── Légende compteurs ── #}
+    <div class="callup-counters">
+        <span class="callup-counter" id="cnt-starter">
+            <strong id="num-starter">{{ starters|length }}</strong> Titulaires
+        </span>
+        <span class="callup-counter" id="cnt-substitute">
+            <strong id="num-substitute">{{ substitutes|length }}</strong> Remplaçants
+        </span>
+        <span class="callup-counter callup-counter--muted" id="cnt-not_called">
+            <strong id="num-not_called">{{ notCalled|length + unassigned|length }}</strong> Non convoqués
+        </span>
+        <span class="callup-counter callup-counter--absent" id="cnt-absent">
+            <strong id="num-absent">{{ absent|length }}</strong> Absents
+        </span>
+    </div>
+
+    {# ── Grille 4 colonnes ── #}
+    <div class="callup-grid">
+
+        {# Titulaires #}
+        <div class="callup-col" data-callup-target="zone" data-role="starter">
+            <div class="callup-col__head">
+                <span class="callup-col__title">Titulaires</span>
+                <span class="callup-col__hint">Max 11</span>
+            </div>
+            <div class="callup-col__list" data-callup-target="list" data-role="starter">
+                {% for cp in starters %}
+                    {{ _self.playerCard(cp.player, 'starter', cp.reason, cp.notes, cp.jerseyNumber) }}
+                {% endfor %}
+            </div>
+        </div>
+
+        {# Remplaçants #}
+        <div class="callup-col" data-callup-target="zone" data-role="substitute">
+            <div class="callup-col__head">
+                <span class="callup-col__title">Remplaçants</span>
+                <span class="callup-col__hint">Banc</span>
+            </div>
+            <div class="callup-col__list" data-callup-target="list" data-role="substitute">
+                {% for cp in substitutes %}
+                    {{ _self.playerCard(cp.player, 'substitute', cp.reason, cp.notes, cp.jerseyNumber) }}
+                {% endfor %}
+            </div>
+        </div>
+
+        {# Non convoqués #}
+        <div class="callup-col callup-col--muted" data-callup-target="zone" data-role="not_called">
+            <div class="callup-col__head">
+                <span class="callup-col__title">Non convoqués</span>
+            </div>
+            <div class="callup-col__list" data-callup-target="list" data-role="not_called">
+                {% for cp in notCalled %}
+                    {{ _self.playerCard(cp.player, 'not_called', cp.reason, cp.notes, null) }}
+                {% endfor %}
+                {% for player in unassigned %}
+                    {{ _self.playerCard(player, 'not_called', null, null, null) }}
+                {% endfor %}
+            </div>
+        </div>
+
+        {# Absents #}
+        <div class="callup-col callup-col--absent" data-callup-target="zone" data-role="absent">
+            <div class="callup-col__head">
+                <span class="callup-col__title">Absents</span>
+                <span class="callup-col__hint">Motif requis</span>
+            </div>
+            <div class="callup-col__list" data-callup-target="list" data-role="absent">
+                {% for cp in absent %}
+                    {{ _self.playerCard(cp.player, 'absent', cp.reason, cp.notes, null) }}
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>{# /callup-grid #}
+
+    {# ── Panneau motif (contextuel) ── #}
+    <div class="callup-reason-panel" id="callupReasonPanel" hidden data-callup-target="reasonPanel">
+        <div class="callup-reason-panel__inner">
+            <div class="callup-reason-panel__title" data-callup-target="reasonPlayerName">Joueur</div>
+            <label class="tactical-form-label" style="margin-top:0.75rem;">Motif</label>
+            <select class="tactical-input" data-callup-target="reasonSelect" data-action="change->callup#applyReason">
+                <option value="">Aucun</option>
+                {% for value, label in reasons %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            <label class="tactical-form-label" style="margin-top:0.75rem;">Note coach</label>
+            <textarea class="tactical-input" rows="2" placeholder="Détail optionnel…"
+                      data-callup-target="reasonNotes" data-action="input->callup#applyReason"></textarea>
+            <button type="button" class="tactical-btn tactical-btn--sm tactical-btn--outline" style="margin-top:0.5rem;"
+                    data-action="click->callup#closeReasonPanel">Fermer</button>
+        </div>
+    </div>
+
+</div>{# /tactical-page-body #}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {{ importmap('app') }}
+    {{ importmap('callup') }}
+{% endblock %}
+
+{# ── Macro carte joueur ── #}
+{% macro playerCard(player, role, reason, notes, jerseyNumber) %}
+<div class="callup-card"
+     draggable="true"
+     data-callup-target="card"
+     data-action="dragstart->callup#dragStart dragend->callup#dragEnd click->callup#openReasonPanel"
+     data-player-id="{{ player.id }}"
+     data-role="{{ role }}"
+     data-reason="{{ reason ?? '' }}"
+     data-notes="{{ notes ?? '' }}"
+     data-jersey="{{ jerseyNumber ?? player.number }}">
+    <div class="callup-card__num">{{ jerseyNumber ?? player.number }}</div>
+    <div class="callup-card__info">
+        <div class="callup-card__name">{{ player.lastName }} <span style="opacity:.6;font-weight:400;">{{ player.firstName|slice(0,1) }}.</span></div>
+        <div class="callup-card__pos">
+            <span class="callup-card__badge callup-card__badge--pos">{{ player.position }}</span>
+            {% if player.status != 'present' %}
+                <span class="callup-card__badge callup-card__badge--status callup-card__badge--{{ player.status }}">
+                    {{ player.status == 'injured' ? '🤕 Blessé' : (player.status == 'suspended' ? '🟨 Suspendu' : player.statusLabel) }}
+                </span>
+            {% endif %}
+            {% if reason %}
+                <span class="callup-card__badge callup-card__badge--reason">{{ reason }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <button type="button" class="callup-card__menu" data-action="click->callup#openReasonPanel" title="Motif / note">⋯</button>
+</div>
+{% endmacro %}

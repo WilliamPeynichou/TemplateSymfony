@@ -108,9 +108,10 @@ class AttendanceRepository extends ServiceEntityRepository
             ->leftJoin('a.fixture', 'f')
             ->leftJoin('a.trainingSession', 'ts')
             ->addSelect('p', 'f', 'ts')
+            ->addSelect('(CASE WHEN f.matchDate IS NOT NULL THEN f.matchDate ELSE ts.startsAt END) AS HIDDEN eventDate')
             ->andWhere('p.team = :team')
             ->setParameter('team', $team)
-            ->orderBy('COALESCE(f.matchDate, ts.startsAt)', 'DESC')
+            ->orderBy('eventDate', 'DESC')
             ->addOrderBy('a.id', 'DESC')
             ->setMaxResults($limit);
 

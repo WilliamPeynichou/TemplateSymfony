@@ -1,169 +1,332 @@
 {% extends 'layout/app.html.twig' %}
 {% block title %}Préparer un match{% endblock %}
 
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/match.css') }}">
+{% endblock %}
+
+{% set strategyBank = selectedTeam ? (strategiesByTeam[selectedTeam.id] ?? null) : null %}
+
 {% block content %}
 <div class="tactical-page-header">
     <div>
         <h1 class="tactical-page-header__title">Préparer un <em>match</em></h1>
-        <p class="tactical-page-header__sub">Contexte, disponibilité, briefing tactique et composition de départ avant d’ouvrir le terrain.</p>
+        <p class="tactical-page-header__sub">Le formulaire s'appuie sur les données enregistrées de l'équipe sélectionnée : effectif, présence, plans sauvegardés et usages réels.</p>
     </div>
 </div>
 
 <div class="tactical-page-body">
+    <div class="tactical-match-prepare__hero">
+        <article class="tactical-match-prepare__hero-card tactical-match-prepare__hero-card--accent">
+            <span class="tactical-match-prepare__hero-label">Équipe active</span>
+            <strong class="tactical-match-prepare__hero-value">{{ selectedTeam ? selectedTeam.name : 'Aucune équipe' }}</strong>
+            <span class="tactical-match-prepare__hero-meta">
+                {% if selectedTeamPreview %}
+                    {{ selectedTeamPreview.counts.players }} joueurs enregistrés · {{ selectedTeamPreview.counts.available }} disponibles
+                {% else %}
+                    Sélectionne une équipe pour charger ses données.
+                {% endif %}
+            </span>
+        </article>
+        <article class="tactical-match-prepare__hero-card">
+            <span class="tactical-match-prepare__hero-label">Présence moyenne</span>
+            <strong class="tactical-match-prepare__hero-value">{{ selectedTeamPreview ? selectedTeamPreview.attendanceRate : 0 }}%</strong>
+            <span class="tactical-match-prepare__hero-meta">Calculée à partir des présences enregistrées</span>
+        </article>
+        <article class="tactical-match-prepare__hero-card">
+            <span class="tactical-match-prepare__hero-label">Système conseillé</span>
+            <strong class="tactical-match-prepare__hero-value">{{ selectedTeamPreview ? selectedTeamPreview.recommendedShape : '4-3-3' }}</strong>
+            <span class="tactical-match-prepare__hero-meta">Dérivé de la répartition réelle de l'effectif</span>
+        </article>
+        <article class="tactical-match-prepare__hero-card">
+            <span class="tactical-match-prepare__hero-label">Plans enregistrés</span>
+            <strong class="tactical-match-prepare__hero-value">{{ strategyBank ? strategyBank.counts.total : 0 }}</strong>
+            <span class="tactical-match-prepare__hero-meta">
+                {{ strategyBank ? strategyBank.counts.free ~ ' libres · ' ~ strategyBank.counts.formation ~ ' formation' : 'Aucun plan associé à cette équipe' }}
+            </span>
+        </article>
+    </div>
+
     <div class="tactical-match-prepare__layout">
-        <div class="tactical-form-card tactical-match-prepare__card">
-            <form method="post" class="tactical-match-prepare">
-                <div class="tactical-card">
-                    <div class="tactical-card__title">Cadre du match</div>
-                    <div class="tactical-form-group" style="margin-top:var(--space-sm);">
-                        <label class="tactical-form-label" for="scenario">Scénario</label>
-                        <select id="scenario" name="scenario" class="tactical-input"
-                                onchange="window.location='{{ path('app_match_prepare') }}?scenario=' + this.value + '&created_team=' + encodeURIComponent(document.getElementById('created_team')?.value || '')">
-                            <option value="base" {% if scenario == 'base' %}selected{% endif %}>Deux équipes de base</option>
-                            <option value="custom_vs_fictional" {% if scenario == 'custom_vs_fictional' %}selected{% endif %}>Une équipe créée contre une équipe fictive</option>
+        <form method="post" class="tactical-match-prepare tactical-match-prepare--refined">
+            <div class="tactical-card tactical-match-prepare__section">
+                <div class="tactical-card__title">Cadre du match</div>
+                <p class="tactical-card__sub">Sélectionne l'équipe, puis le match se remplit avec ses tactiques et ses tendances de présence.</p>
+
+                <div class="tactical-form-row" style="margin-top:var(--space-sm);">
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="team_id">Équipe 1</label>
+                        <select id="team_id"
+                                name="team_id"
+                                class="tactical-input"
+                                onchange="prepareMatchLoadTeam(this.value)"
+                                {% if teams is empty %}disabled{% endif %}>
+                            <option value="">Sélectionnez une équipe</option>
+                            {% for team in teams %}
+                                <option value="{{ team.id }}" {{ selectedTeamId == team.id ? 'selected' : '' }}>
+                                    {{ team.name }}{% if team.club %} · {{ team.club }}{% endif %}
+                                </option>
+                            {% endfor %}
                         </select>
-                    </div>
-
-                    {% if scenario == 'custom_vs_fictional' %}
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="created_team">Équipe coachée</label>
-                            <select id="created_team" name="created_team" class="tactical-input" {% if customTeams is empty %}disabled{% endif %}>
-                                <option value="">Sélectionnez une équipe</option>
-                                {% for team in customTeams %}
-                                    <option value="{{ team.id }}" {% if selectedCustomTeam and selectedCustomTeam.id == team.id %}selected{% endif %}>
-                                        {{ team.name }}{% if team.club %} · {{ team.club }}{% endif %}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            {% if customTeams is empty %}
-                                <span style="font-size:0.8125rem;color:var(--error);display:block;margin-top:0.35rem;">Crée d'abord une équipe dans "Mes équipes".</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="tactical-form-row">
-                            <div class="tactical-form-group">
-                                <label class="tactical-form-label" for="fictional_name">Adversaire</label>
-                                <input id="fictional_name" type="text" name="fictional_name" class="tactical-input" placeholder="Ex : FC Andfield Academy" value="{{ app.request.request.get('fictional_name', 'Équipe fictive') }}">
-                            </div>
-                            <div class="tactical-form-group">
-                                <label class="tactical-form-label" for="competition">Compétition</label>
-                                <input id="competition" type="text" name="competition" class="tactical-input" placeholder="Championnat U17" value="{{ matchContext.competition }}">
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="tactical-form-row">
-                            <div class="tactical-form-group">
-                                <label class="tactical-form-label" for="base_home">Équipe 1</label>
-                                <select id="base_home" name="base_home" class="tactical-input">
-                                    <option value="liverpool" {% if app.request.request.get('base_home', 'liverpool') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
-                                    <option value="paris" {% if app.request.request.get('base_home') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
-                                </select>
-                            </div>
-                            <div class="tactical-form-group">
-                                <label class="tactical-form-label" for="base_away">Équipe 2</label>
-                                <select id="base_away" name="base_away" class="tactical-input">
-                                    <option value="paris" {% if app.request.request.get('base_away', 'paris') == 'paris' %}selected{% endif %}>Paris Saint-Germain</option>
-                                    <option value="liverpool" {% if app.request.request.get('base_away') == 'liverpool' %}selected{% endif %}>Liverpool FC</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="tactical-form-row">
-                            <div class="tactical-form-group">
-                                <label class="tactical-form-label" for="opponent_label">Affiche</label>
-                                <input id="opponent_label" type="text" name="opponent_label" class="tactical-input" placeholder="Ex : Duel haut de tableau" value="{{ matchContext.opponentLabel }}">
-                            </div>
-                            <div class="tactical-form-group">
-                                <label class="tactical-form-label" for="competition">Compétition</label>
-                                <input id="competition" type="text" name="competition" class="tactical-input" placeholder="Friendly / Cup / League" value="{{ matchContext.competition }}">
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    <div class="tactical-form-row">
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="kickoff">Coup d’envoi</label>
-                            <input id="kickoff" type="datetime-local" name="kickoff" class="tactical-input" value="{{ matchContext.kickoff }}">
-                        </div>
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="venue">Contexte</label>
-                            <select id="venue" name="venue" class="tactical-input">
-                                <option value="home" {% if matchContext.venue == 'home' %}selected{% endif %}>À domicile</option>
-                                <option value="away" {% if matchContext.venue == 'away' %}selected{% endif %}>À l’extérieur</option>
-                                <option value="neutral" {% if matchContext.venue == 'neutral' %}selected{% endif %}>Terrain neutre</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tactical-card">
-                    <div class="tactical-card__title">Plan tactique</div>
-                    <div class="tactical-form-row" style="margin-top:var(--space-sm);">
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="shape">Système visé</label>
-                            <select id="shape" name="shape" class="tactical-input">
-                                {% for shape in ['4-3-3', '4-2-3-1', '4-4-2', '3-4-3', '3-5-2'] %}
-                                    <option value="{{ shape }}" {% if matchContext.shape == shape %}selected{% endif %}>{{ shape }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="objective">Objectif principal</label>
-                            <input id="objective" type="text" name="objective" class="tactical-input" placeholder="Ex : verrouiller l’axe puis attaquer dans le dos" value="{{ matchContext.objective }}">
-                        </div>
-                    </div>
-                    <div class="tactical-form-row">
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="pressing_plan">Sans ballon</label>
-                            <textarea id="pressing_plan" name="pressing_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Bloc, hauteur, déclencheurs, couverture de l’axe">{{ matchContext.pressingPlan }}</textarea>
-                        </div>
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="in_possession_plan">Avec ballon</label>
-                            <textarea id="in_possession_plan" name="in_possession_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Sortie de balle, circuits, zones ciblées">{{ matchContext.inPossessionPlan }}</textarea>
-                        </div>
-                    </div>
-                    <div class="tactical-form-row">
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="transition_plan">Transitions</label>
-                            <textarea id="transition_plan" name="transition_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Contre-pressing, replis, premières passes">{{ matchContext.transitionPlan }}</textarea>
-                        </div>
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="set_pieces_plan">Coups de pied arrêtés</label>
-                            <textarea id="set_pieces_plan" name="set_pieces_plan" class="tactical-input tactical-match-prepare__textarea" placeholder="Tireurs, cibles, organisation défensive">{{ matchContext.setPiecesPlan }}</textarea>
-                        </div>
+                        {% if teams is empty %}
+                            <span style="font-size:0.8125rem;color:var(--error);display:block;margin-top:0.35rem;">Crée d'abord une équipe dans "Mes équipes".</span>
+                        {% endif %}
                     </div>
                     <div class="tactical-form-group">
-                        <label class="tactical-form-label" for="watchouts">Points de vigilance</label>
-                        <textarea id="watchouts" name="watchouts" class="tactical-input tactical-match-prepare__textarea" placeholder="Joueur clé adverse, menace sur second ballon, gestion émotionnelle">{{ matchContext.watchouts }}</textarea>
+                        <label class="tactical-form-label" for="opponent_name">Adversaire</label>
+                        <input id="opponent_name"
+                               type="text"
+                               name="opponent_name"
+                               class="tactical-input"
+                               placeholder="Ex : FC Andfield Academy"
+                               value="{{ opponentName }}">
                     </div>
                 </div>
 
-                {% if scenario == 'custom_vs_fictional' %}
-                    <div class="tactical-card">
-                        <div class="tactical-card__title">Adversaire fictif</div>
-                        <p class="tactical-card__sub">Tu peux saisir un effectif sur mesure pour simuler les profils adverses.</p>
-                        <div class="tactical-form-group">
-                            <label class="tactical-form-label" for="fictional_players">Joueurs fictifs</label>
-                            <textarea id="fictional_players" name="fictional_players" class="tactical-input tactical-match-prepare__textarea" placeholder="Format : numéro, nom, poste&#10;Ex : 1, Gardien adverse, GK">{{ app.request.request.get('fictional_players') }}</textarea>
+                <div class="tactical-form-row">
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="competition">Compétition</label>
+                        <select id="competition" name="competition" class="tactical-input">
+                            {% for value, label in competitions %}
+                                <option value="{{ value }}" {{ matchContext.competition == value ? 'selected' : '' }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="kickoff">Coup d'envoi</label>
+                        <input id="kickoff"
+                               type="datetime-local"
+                               name="kickoff"
+                               class="tactical-input"
+                               value="{{ matchContext.kickoff }}">
+                    </div>
+                </div>
+
+                <div class="tactical-form-row">
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="venue">Contexte</label>
+                        <select id="venue" name="venue" class="tactical-input">
+                            <option value="home" {{ matchContext.venue == 'home' ? 'selected' : '' }}>À domicile</option>
+                            <option value="away" {{ matchContext.venue == 'away' ? 'selected' : '' }}>À l'extérieur</option>
+                            <option value="neutral" {{ matchContext.venue == 'neutral' ? 'selected' : '' }}>Terrain neutre</option>
+                        </select>
+                    </div>
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="strategy_id">Plan tactique actif</label>
+                        <input type="hidden" id="strategy_id" name="strategy_id" value="{{ matchContext.strategyId }}">
+                        <div class="tactical-match-prepare__selected-plan">
+                            <strong data-prepare-target="selectedStrategyName">{{ selectedStrategy ? selectedStrategy.name : 'Aucun plan sélectionné' }}</strong>
+                            <span data-prepare-target="selectedStrategyMeta">
+                                {{ selectedStrategy ? selectedStrategy.modeLabel ~ (selectedStrategy.mode == 'formation' ? ' · ' ~ selectedStrategy.formation : '') : 'Choisis un plan libre ou une tactique formation enregistrée.' }}
+                            </span>
                         </div>
                     </div>
-                {% endif %}
-
-                <div class="tactical-form-actions">
-                    <button class="tactical-btn tactical-btn--primary" type="submit">Ouvrir le tableau tactique</button>
-                    <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--outline">Retour aux équipes</a>
-                </div>
-            </form>
-        </div>
-
-        <div class="tactical-match-preview">
-            <div class="tactical-card">
-                <div class="tactical-card__title">Cockpit coach</div>
-                <p class="tactical-card__sub">Prépare ton plan avec la disponibilité réelle, les leaders de forme et une recommandation de structure.</p>
-                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.75rem;margin-top:var(--space-sm);">
-                    <div class="tactical-badge tactical-badge--lime">Système {{ selectedTeamPreview ? selectedTeamPreview.recommendedShape : matchContext.shape }}</div>
-                    <div class="tactical-badge">{{ matchContext.venue == 'away' ? 'Extérieur' : (matchContext.venue == 'neutral' ? 'Neutre' : 'Domicile') }}</div>
                 </div>
             </div>
+
+            <div class="tactical-card tactical-match-prepare__section">
+                <div class="tactical-card__title">Plans enregistrés</div>
+                <p class="tactical-card__sub">Les plans libres et les tactiques formation sont sélectionnables directement depuis la bibliothèque de l'équipe.</p>
+
+                {% if strategyBank %}
+                    <div class="tactical-plan-bank__summary">
+                        <span class="tactical-badge">{{ strategyBank.counts.total }} plans</span>
+                        <span class="tactical-badge tactical-badge--lime">{{ strategyBank.counts.free }} libres</span>
+                        <span class="tactical-badge tactical-badge--primary">{{ strategyBank.counts.formation }} formation</span>
+                    </div>
+
+                    <div class="tactical-plan-bank">
+                        <div class="tactical-plan-bank__group">
+                            <div class="tactical-plan-bank__group-head">
+                                <strong>Plans libres</strong>
+                                <span>{{ strategyBank.free|length }} plan{{ strategyBank.free|length > 1 ? 's' : '' }}</span>
+                            </div>
+                            <div class="tactical-plan-bank__cards">
+                                {% for strategy in strategyBank.free %}
+                                    <button type="button"
+                                            class="tactical-plan-card {{ matchContext.strategyId == strategy.id ? 'tactical-plan-card--active' : '' }}"
+                                            data-strategy-id="{{ strategy.id }}"
+                                            data-strategy-name="{{ strategy.name|e('html_attr') }}"
+                                            data-strategy-mode="{{ strategy.mode|e('html_attr') }}"
+                                            data-strategy-formation="{{ strategy.formation|e('html_attr') }}"
+                                            data-strategy-out="{{ strategy.outOfPossessionNotes|e('html_attr') }}"
+                                            data-strategy-in="{{ strategy.inPossessionNotes|e('html_attr') }}"
+                                            data-strategy-transition="{{ strategy.transitionNotes|e('html_attr') }}"
+                                            data-strategy-setpiece="{{ strategy.setPieceNotes|e('html_attr') }}"
+                                            onclick="prepareMatchSelectStrategy(this)">
+                                        <div class="tactical-plan-card__head">
+                                            <div>
+                                                <strong>{{ strategy.name }}</strong>
+                                                <span>{{ strategy.updatedAtLabel }}</span>
+                                            </div>
+                                            {% if strategy.isDefault %}
+                                                <span class="tactical-badge tactical-badge--lime">Par défaut</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="tactical-plan-card__meta">
+                                            <span>{{ strategy.usageCount }} utilisations</span>
+                                            <span>{{ strategy.notesCount }} consignes enregistrées</span>
+                                        </div>
+                                        <div class="tactical-plan-card__tags">
+                                            {% if strategy.outOfPossessionNotes %}<span>Sans ballon</span>{% endif %}
+                                            {% if strategy.inPossessionNotes %}<span>Avec ballon</span>{% endif %}
+                                            {% if strategy.transitionNotes %}<span>Transitions</span>{% endif %}
+                                            {% if strategy.setPieceNotes %}<span>CPA</span>{% endif %}
+                                        </div>
+                                    </button>
+                                {% else %}
+                                    <div class="tactical-plan-bank__empty">Aucun plan libre enregistré.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="tactical-plan-bank__group">
+                            <div class="tactical-plan-bank__group-head">
+                                <strong>Plans formation</strong>
+                                <span>{{ strategyBank.formation|length }} plan{{ strategyBank.formation|length > 1 ? 's' : '' }}</span>
+                            </div>
+                            <div class="tactical-plan-bank__cards">
+                                {% for strategy in strategyBank.formation %}
+                                    <button type="button"
+                                            class="tactical-plan-card {{ matchContext.strategyId == strategy.id ? 'tactical-plan-card--active' : '' }}"
+                                            data-strategy-id="{{ strategy.id }}"
+                                            data-strategy-name="{{ strategy.name|e('html_attr') }}"
+                                            data-strategy-mode="{{ strategy.mode|e('html_attr') }}"
+                                            data-strategy-formation="{{ strategy.formation|e('html_attr') }}"
+                                            data-strategy-out="{{ strategy.outOfPossessionNotes|e('html_attr') }}"
+                                            data-strategy-in="{{ strategy.inPossessionNotes|e('html_attr') }}"
+                                            data-strategy-transition="{{ strategy.transitionNotes|e('html_attr') }}"
+                                            data-strategy-setpiece="{{ strategy.setPieceNotes|e('html_attr') }}"
+                                            onclick="prepareMatchSelectStrategy(this)">
+                                        <div class="tactical-plan-card__head">
+                                            <div>
+                                                <strong>{{ strategy.name }}</strong>
+                                                <span>{{ strategy.formation }} · {{ strategy.updatedAtLabel }}</span>
+                                            </div>
+                                            {% if strategy.isDefault %}
+                                                <span class="tactical-badge tactical-badge--lime">Par défaut</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="tactical-plan-card__meta">
+                                            <span>{{ strategy.usageCount }} utilisations</span>
+                                            <span>{{ strategy.notesCount }} consignes enregistrées</span>
+                                        </div>
+                                        <div class="tactical-plan-card__tags">
+                                            {% if strategy.outOfPossessionNotes %}<span>Sans ballon</span>{% endif %}
+                                            {% if strategy.inPossessionNotes %}<span>Avec ballon</span>{% endif %}
+                                            {% if strategy.transitionNotes %}<span>Transitions</span>{% endif %}
+                                            {% if strategy.setPieceNotes %}<span>CPA</span>{% endif %}
+                                        </div>
+                                    </button>
+                                {% else %}
+                                    <div class="tactical-plan-bank__empty">Aucune tactique formation enregistrée.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="tactical-plan-bank__empty tactical-plan-bank__empty--large">
+                        Choisis une équipe pour charger ses plans libres et ses tactiques formation.
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="tactical-card tactical-match-prepare__section">
+                <div class="tactical-card__title">Brief tactique</div>
+                <p class="tactical-card__sub">Les champs ci-dessous se remplissent à partir du plan choisi ou du système conseillé par l'effectif.</p>
+
+                <div class="tactical-form-row" style="margin-top:var(--space-sm);">
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="shape">Système cible</label>
+                        <select id="shape" name="shape" class="tactical-input">
+                            {% for shape in ['4-3-3', '4-2-3-1', '4-4-2', '3-4-3', '3-5-2'] %}
+                                <option value="{{ shape }}" {{ matchContext.shape == shape ? 'selected' : '' }}>{{ shape }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="objective">Objectif principal</label>
+                        <input id="objective"
+                               type="text"
+                               name="objective"
+                               class="tactical-input"
+                               placeholder="Ex : verrouiller l'axe puis attaquer dans le dos"
+                               value="{{ matchContext.objective }}">
+                    </div>
+                </div>
+
+                <div class="tactical-form-row">
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="pressing_plan">Sans ballon</label>
+                        <textarea id="pressing_plan"
+                                  name="pressing_plan"
+                                  class="tactical-input tactical-match-prepare__textarea"
+                                  placeholder="Bloc, hauteur, déclencheurs, couverture de l'axe">{{ matchContext.pressingPlan }}</textarea>
+                    </div>
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="in_possession_plan">Avec ballon</label>
+                        <textarea id="in_possession_plan"
+                                  name="in_possession_plan"
+                                  class="tactical-input tactical-match-prepare__textarea"
+                                  placeholder="Sortie de balle, circuits, zones ciblées">{{ matchContext.inPossessionPlan }}</textarea>
+                    </div>
+                </div>
+
+                <div class="tactical-form-row">
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="transition_plan">Transitions</label>
+                        <textarea id="transition_plan"
+                                  name="transition_plan"
+                                  class="tactical-input tactical-match-prepare__textarea"
+                                  placeholder="Contre-pressing, repli, première passe">{{ matchContext.transitionPlan }}</textarea>
+                    </div>
+                    <div class="tactical-form-group">
+                        <label class="tactical-form-label" for="set_pieces_plan">CPA</label>
+                        <textarea id="set_pieces_plan"
+                                  name="set_pieces_plan"
+                                  class="tactical-input tactical-match-prepare__textarea"
+                                  placeholder="Corners, coups francs, remises en jeu">{{ matchContext.setPiecesPlan }}</textarea>
+                    </div>
+                </div>
+
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label" for="watchouts">Points de vigilance</label>
+                    <textarea id="watchouts"
+                              name="watchouts"
+                              class="tactical-input tactical-match-prepare__textarea"
+                              placeholder="Joueur clé adverse, menace sur second ballon, gestion émotionnelle">{{ matchContext.watchouts }}</textarea>
+                </div>
+            </div>
+
+            <div class="tactical-form-actions">
+                <button class="tactical-btn tactical-btn--primary" type="submit">Ouvrir le tableau tactique</button>
+                <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--outline">Retour aux équipes</a>
+            </div>
+        </form>
+
+        <aside class="tactical-match-preview tactical-match-preview--refined">
+            <div class="tactical-card">
+                <div class="tactical-card__title">Lecture terrain</div>
+                <p class="tactical-card__sub">Ce panneau agrège les données déjà enregistrées pour guider le choix du système et des consignes.</p>
+                <div class="tactical-match-preview__stats">
+                    <div><span class="tactical-badge tactical-badge--lime">{{ selectedTeamPreview ? selectedTeamPreview.counts.available : 0 }}</span><p>Disponibles</p></div>
+                    <div><span class="tactical-badge">{{ selectedTeamPreview ? selectedTeamPreview.counts.unavailable : 0 }}</span><p>Indisponibles</p></div>
+                    <div><span class="tactical-badge">{{ selectedTeamPreview ? selectedTeamPreview.positionCounts.DEF : 0 }}</span><p>Défenseurs</p></div>
+                    <div><span class="tactical-badge">{{ selectedTeamPreview ? selectedTeamPreview.positionCounts.MID : 0 }}</span><p>Milieux</p></div>
+                </div>
+            </div>
+
+            {% if selectedStrategy %}
+                <div class="tactical-card">
+                    <div class="tactical-card__title">Plan actif</div>
+                    <div class="tactical-match-preview__player">
+                        <strong>{{ selectedStrategy.name }}</strong>
+                        <span>{{ selectedStrategy.modeLabel }}{% if selectedStrategy.mode == 'formation' %} · {{ selectedStrategy.formation }}{% endif %}</span>
+                        <span>{{ selectedStrategy.usageCount }} utilisations · {{ selectedStrategy.notesCount }} consignes enregistrées</span>
+                    </div>
+                </div>
+            {% endif %}
 
             {% if selectedTeamPreview %}
                 <div class="tactical-match-preview__grid">
@@ -171,8 +334,8 @@
                         <div class="tactical-card__title">{{ selectedTeamPreview.teamName }}</div>
                         <div class="tactical-card__sub">{{ selectedTeamPreview.counts.players }} joueurs · {{ selectedTeamPreview.recommendedShape }} recommandé</div>
                         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.75rem;">
-                            <div><span class="tactical-badge tactical-badge--lime">{{ selectedTeamPreview.counts.available }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Disponibles</p></div>
-                            <div><span class="tactical-badge">{{ selectedTeamPreview.counts.unavailable }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Indisponibles</p></div>
+                            <div><span class="tactical-badge tactical-badge--lime">{{ selectedTeamPreview.attendanceRate }}%</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Présence moyenne</p></div>
+                            <div><span class="tactical-badge">{{ selectedTeamPreview.counts.available }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Disponibles</p></div>
                             <div><span class="tactical-badge">{{ selectedTeamPreview.positionCounts.DEF }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Défenseurs</p></div>
                             <div><span class="tactical-badge">{{ selectedTeamPreview.positionCounts.MID }}</span><p class="tactical-card__sub" style="margin-top:0.35rem;">Milieux</p></div>
                         </div>
@@ -195,7 +358,7 @@
                 <div class="tactical-card">
                     <div class="tactical-card__title">Absents et blessés</div>
                     {% if selectedTeamPreview.unavailable is empty %}
-                        <p class="tactical-card__sub">Tout l’effectif est disponible.</p>
+                        <p class="tactical-card__sub">Tout l'effectif est disponible.</p>
                     {% else %}
                         <div style="display:grid;gap:0.6rem;">
                             {% for player in selectedTeamPreview.unavailable %}
@@ -207,22 +370,115 @@
                         </div>
                     {% endif %}
                 </div>
-
-                <div class="tactical-card">
-                    <div class="tactical-card__title">Lecture rapide avant match</div>
-                    <ul class="tactical-match-prepare__checklist">
-                        <li>Valider le système cible : <strong>{{ selectedTeamPreview.recommendedShape }}</strong>.</li>
-                        <li>Construire le onze avec les joueurs disponibles d’abord.</li>
-                        <li>Prévoir les ajustements de transition et coups de pied arrêtés avant d’ouvrir le terrain.</li>
-                    </ul>
-                </div>
-            {% else %}
-                <div class="tactical-card">
-                    <div class="tactical-card__title">Ce que fait cette page</div>
-                    <p class="tactical-card__sub">Choisis une équipe coachée pour faire remonter les indisponibilités, la profondeur par ligne et les leaders de forme avant de passer au tableau terrain.</p>
-                </div>
             {% endif %}
-        </div>
+
+            <div class="tactical-card">
+                <div class="tactical-card__title">Checklist coach</div>
+                <ul class="tactical-match-prepare__checklist">
+                    <li>Valider le système cible recommandé : <strong>{{ selectedTeamPreview ? selectedTeamPreview.recommendedShape : '4-3-3' }}</strong>.</li>
+                    <li>Partir du plan actif si la tactique est déjà enregistrée.</li>
+                    <li>Compléter seulement les consignes manquantes, pas tout réécrire.</li>
+                </ul>
+            </div>
+        </aside>
     </div>
 </div>
+
+<script>
+function prepareMatchEscapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function prepareMatchLoadTeam(teamId) {
+    const form = document.querySelector('.tactical-match-prepare');
+    if (!form) return;
+
+    const params = new URLSearchParams();
+    const currentUrl = new URL(window.location.href);
+
+    form.querySelectorAll('input, textarea, select').forEach(field => {
+        if (!field.name || field.name === '_token') {
+            return;
+        }
+
+        if (field.type === 'checkbox' || field.type === 'radio') {
+            if (field.checked) {
+                params.set(field.name, field.value);
+            }
+            return;
+        }
+
+        params.set(field.name, field.value);
+    });
+
+    if (teamId) {
+        params.set('team_id', teamId);
+    } else {
+        params.delete('team_id');
+    }
+
+    currentUrl.search = params.toString();
+    window.location.href = currentUrl.toString();
+}
+
+function prepareMatchSelectStrategy(button) {
+    const strategyIdInput = document.getElementById('strategy_id');
+    if (!strategyIdInput) return;
+
+    strategyIdInput.value = button.dataset.strategyId || '';
+
+    document.querySelectorAll('.tactical-plan-card').forEach(card => {
+        card.classList.toggle('tactical-plan-card--active', card === button);
+    });
+
+    const nameTarget = document.querySelector('[data-prepare-target="selectedStrategyName"]');
+    const metaTarget = document.querySelector('[data-prepare-target="selectedStrategyMeta"]');
+    if (nameTarget) {
+        nameTarget.textContent = button.dataset.strategyName || 'Plan tactique';
+    }
+    if (metaTarget) {
+        const mode = button.dataset.strategyMode || '';
+        const formation = button.dataset.strategyFormation || '';
+        metaTarget.textContent = mode === 'free'
+            ? 'Plan libre enregistré'
+            : (formation ? `Plan formation · ${formation}` : 'Plan formation enregistré');
+    }
+
+    prepareMatchApplyStrategy(button.dataset);
+}
+
+function prepareMatchApplyStrategy(strategyData) {
+    const mode = strategyData.strategyMode || '';
+    const formation = strategyData.strategyFormation || '';
+
+    const shape = document.getElementById('shape');
+    if (shape && mode === 'formation' && formation) {
+        for (const opt of shape.options) {
+            if (opt.value === formation) {
+                opt.selected = true;
+                break;
+            }
+        }
+    }
+
+    const pairs = [
+        ['pressing_plan', strategyData.strategyOut],
+        ['in_possession_plan', strategyData.strategyIn],
+        ['transition_plan', strategyData.strategyTransition],
+        ['set_pieces_plan', strategyData.strategySetpiece],
+    ];
+
+    pairs.forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value || '';
+        }
+    });
+}
+</script>
 {% endblock %}

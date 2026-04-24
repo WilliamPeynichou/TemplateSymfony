@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use App\Entity\PlanNote;
+use App\Entity\FormationSlot;
 use App\Entity\Player;
 use App\Entity\PlayerPosition;
 use App\Entity\Team;
@@ -182,9 +182,9 @@ class BaseTeamImporter
     private function canRemovePlayer(Player $player): bool
     {
         $playerPosition = $this->em->getRepository(PlayerPosition::class)->findOneBy(['player' => $player]);
-        $planNote = $this->em->getRepository(PlanNote::class)->findOneBy(['player' => $player]);
+        $formationSlot  = $this->em->getRepository(FormationSlot::class)->findOneBy(['player' => $player]);
 
-        return $playerPosition === null && $planNote === null;
+        return $playerPosition === null && $formationSlot === null;
     }
 
     private function normalizeName(string $value): string

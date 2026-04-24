@@ -51,7 +51,14 @@
                         {% for f in fixtures %}
                             <tr>
                                 <td style="color:var(--on-surface-variant);font-size:0.8125rem;white-space:nowrap;">{{ f.matchDate|date('d/m/Y') }}</td>
-                                <td>vs {{ f.opponent }}</td>
+                                <td>
+                                    <div>vs {{ f.opponent }}</div>
+                                    {% if f.tacticalStrategy %}
+                                        <div style="color:var(--on-surface-variant);font-size:0.8125rem;margin-top:0.2rem;">
+                                            Tactique : {{ f.tacticalStrategy.name }}{% if f.tacticalStrategy.formation %} · {{ f.tacticalStrategy.formation }}{% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
                                 <td style="color:var(--on-surface-variant);font-size:0.8125rem;">{{ f.venue }}</td>
                                 <td>
                                     {% if f.status == 'played' %}

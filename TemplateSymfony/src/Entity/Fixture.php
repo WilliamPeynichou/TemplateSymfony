@@ -17,9 +17,15 @@ class Fixture
 
     public const HOME = 'home';
     public const AWAY = 'away';
+    public const NEUTRAL = 'neutral';
+
+    public const COMPETITION_FRIENDLY = 'amical';
+    public const COMPETITION_LEAGUE = 'championnat';
+    public const COMPETITION_CUP = 'coupe';
 
     public const STATUSES = [self::STATUS_SCHEDULED, self::STATUS_PLAYED, self::STATUS_CANCELLED];
-    public const VENUES = [self::HOME, self::AWAY];
+    public const VENUES = [self::HOME, self::AWAY, self::NEUTRAL];
+    public const COMPETITIONS = [self::COMPETITION_FRIENDLY, self::COMPETITION_LEAGUE, self::COMPETITION_CUP];
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -51,6 +57,13 @@ class Fixture
 
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $competition = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?TacticalStrategy $tacticalStrategy = null;
+
+    #[ORM\OneToOne(mappedBy: 'fixture', targetEntity: Callup::class, cascade: ['persist', 'remove'])]
+    private ?Callup $callup = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $notes = null;
@@ -168,6 +181,32 @@ class Fixture
     {
         $this->competition = $competition;
 
+        return $this;
+    }
+
+    public function getTacticalStrategy(): ?TacticalStrategy
+    {
+        return $this->tacticalStrategy;
+    }
+
+    public function setTacticalStrategy(?TacticalStrategy $tacticalStrategy): static
+    {
+        $this->tacticalStrategy = $tacticalStrategy;
+
+        return $this;
+    }
+
+    public function getCallup(): ?Callup { return $this->callup; }
+
+    public function setCallup(?Callup $callup): static
+    {
+        if ($callup === null && $this->callup !== null) {
+            $this->callup->setFixture(null);
+        }
+        if ($callup !== null && $callup->getFixture() !== $this) {
+            $callup->setFixture($this);
+        }
+        $this->callup = $callup;
         return $this;
     }
 

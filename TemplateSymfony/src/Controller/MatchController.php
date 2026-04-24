@@ -2,13 +2,16 @@
 
 namespace App\Controller;
 
+use App\Entity\Fixture;
 use App\Entity\Player;
+use App\Entity\TacticalStrategy;
 use App\Entity\Team;
 use App\Entity\User;
 use App\Repository\AttendanceRepository;
 use App\Repository\PlayerMatchStatRepository;
+use App\Repository\TacticalStrategyRepository;
 use App\Repository\TeamRepository;
-use App\Service\BaseTeamImporter;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,80 +26,165 @@ class MatchController extends AbstractController
     public function prepare(
         Request $request,
         TeamRepository $teamRepository,
-        BaseTeamImporter $baseTeamImporter,
+        TacticalStrategyRepository $strategyRepository,
         AttendanceRepository $attendanceRepository,
         PlayerMatchStatRepository $playerMatchStatRepository,
+        EntityManagerInterface $em,
     ): Response
     {
         /** @var User $coach */
         $coach = $this->getUser();
         $teams = $teamRepository->findByCoach($coach);
-        $customTeams = array_values(array_filter(
-            $teams,
-            fn (Team $team) => !in_array($team->getClub(), ['Liverpool FC', 'Paris Saint-Germain'], true)
-        ));
 
-        $scenario = (string) ($request->isMethod('POST')
-            ? $request->request->get('scenario', 'base')
-            : $request->query->get('scenario', 'base'));
-        $selectedCustomTeamId = (int) ($request->isMethod('POST')
-            ? $request->request->get('created_team', 0)
-            : $request->query->get('created_team', 0));
-        $selectedCustomTeam = $this->findSelectedTeam($customTeams, $selectedCustomTeamId);
+        $selectedTeamId = (int) ($request->isMethod('POST')
+            ? $request->request->get('team_id', 0)
+            : $request->query->get('team_id', 0));
+        $selectedTeam = $this->findSelectedTeam($teams, $selectedTeamId);
+        $opponentName = trim((string) ($request->isMethod('POST')
+            ? $request->request->get('opponent_name', '')
+            : $request->query->get('opponent_name', '')));
+
         $matchContext = $this->buildMatchContext($request);
-        $selectedTeamPreview = $selectedCustomTeam instanceof Team
-            ? $this->buildTeamPreparationInsights($selectedCustomTeam, $attendanceRepository, $playerMatchStatRepository)
+        $selectedTeamPreview = $selectedTeam instanceof Team
+            ? $this->buildTeamPreparationInsights($selectedTeam, $attendanceRepository, $playerMatchStatRepository)
             : null;
 
-        if ($request->isMethod('POST')) {
-            if ($scenario === 'custom_vs_fictional') {
-                if (!$selectedCustomTeam) {
-                    $this->addFlash('error', 'Sélectionnez une équipe créée pour préparer ce match.');
-                } else {
-                    $request->getSession()->set('match_preparation', [
-                        'scenario' => $scenario,
-                        'context' => $matchContext,
-                        'homeInsights' => $selectedTeamPreview,
-                        'home' => $this->buildRealTeamData($selectedCustomTeam, 'home', 'Mon équipe', $attendanceRepository, $playerMatchStatRepository),
-                        'away' => $this->buildFictionalTeamData(
-                            'away',
-                            trim((string) $request->request->get('fictional_name', 'Équipe fictive')),
-                            (string) $request->request->get('fictional_players', '')
-                        ),
-                    ]);
+        $strategiesByTeam = [];
+        $selectedStrategy = null;
+        foreach ($teams as $team) {
+            $strategies = $strategyRepository->findByTeam($team);
+            $strategiesByTeam[$team->getId()] = $this->buildStrategyBankForTeam($strategies);
 
-                    return $this->redirectToRoute('app_match_board');
+            if ($selectedTeam instanceof Team && $team->getId() === $selectedTeam->getId()) {
+                $selectedStrategyId = (int) $matchContext['strategyId'];
+                foreach ($strategies as $strategyCandidate) {
+                    if ($selectedStrategyId > 0 && $strategyCandidate->getId() === $selectedStrategyId) {
+                        $selectedStrategy = $strategyCandidate;
+                        break;
+                    }
                 }
-            } else {
-                $baseTeams = $baseTeamImporter->ensureBaseTeams($coach);
-                $homeKey = (string) $request->request->get('base_home', 'liverpool');
-                $awayKey = (string) $request->request->get('base_away', 'paris');
 
-                if (!isset($baseTeams[$homeKey], $baseTeams[$awayKey])) {
-                    $this->addFlash('error', 'Sélection invalide pour les équipes de base.');
-                } elseif ($homeKey === $awayKey) {
-                    $this->addFlash('error', 'Choisissez deux équipes de base différentes.');
-                } else {
-                    $request->getSession()->set('match_preparation', [
-                        'scenario' => 'base',
-                        'context' => $matchContext,
-                        'homeInsights' => $this->buildTeamPreparationInsights($baseTeams[$homeKey], $attendanceRepository, $playerMatchStatRepository),
-                        'awayInsights' => $this->buildTeamPreparationInsights($baseTeams[$awayKey], $attendanceRepository, $playerMatchStatRepository),
-                        'home' => $this->buildRealTeamData($baseTeams[$homeKey], 'home', 'Équipe de base', $attendanceRepository, $playerMatchStatRepository),
-                        'away' => $this->buildRealTeamData($baseTeams[$awayKey], 'away', 'Équipe de base', $attendanceRepository, $playerMatchStatRepository),
-                    ]);
-
-                    return $this->redirectToRoute('app_match_board');
+                if (!$selectedStrategy) {
+                    $selectedStrategy = $strategyRepository->findDefaultForTeam($selectedTeam) ?? ($strategies[0] ?? null);
                 }
             }
         }
 
+        if (is_array($selectedTeamPreview) && $selectedStrategy instanceof TacticalStrategy) {
+            $matchContext = $this->applyStrategyDefaultsToMatchContext($matchContext, $selectedStrategy, $request);
+        }
+
+        if (is_array($selectedTeamPreview) && !$request->request->has('shape') && !$request->query->has('shape')) {
+            $matchContext['shape'] = $selectedStrategy instanceof TacticalStrategy && $selectedStrategy->isFormation()
+                ? $selectedStrategy->getFormation()
+                : $selectedTeamPreview['recommendedShape'];
+        }
+
+        if ($selectedStrategy instanceof TacticalStrategy) {
+            $matchContext['strategyId'] = $selectedStrategy->getId() ?? 0;
+            $matchContext['strategyName'] = $selectedStrategy->getName();
+            $matchContext['strategyMode'] = $selectedStrategy->getMode();
+        }
+
+        if ($request->isMethod('POST')) {
+            if (!$selectedTeam) {
+                $this->addFlash('error', 'Sélectionnez une de vos équipes pour préparer ce match.');
+            } elseif ($opponentName === '') {
+                $this->addFlash('error', 'Saisissez le nom de l\'adversaire.');
+            } else {
+                $kickoffAt = null;
+                if ($matchContext['kickoff'] !== '') {
+                    try {
+                        $kickoffAt = new \DateTimeImmutable($matchContext['kickoff']);
+                    } catch (\Exception) {
+                        $this->addFlash('error', 'La date du coup d\'envoi est invalide.');
+
+                        return $this->render('match/prepare.html.twig', [
+                            'teams' => $teams,
+                            'selectedTeamId' => $selectedTeamId,
+                            'selectedTeam' => $selectedTeam,
+                            'opponentName' => $opponentName,
+                            'selectedTeamPreview' => $selectedTeamPreview,
+                            'matchContext' => $matchContext,
+                            'strategiesByTeam' => $strategiesByTeam,
+                            'selectedStrategy' => $selectedStrategy instanceof TacticalStrategy ? $this->buildStrategyCardData($selectedStrategy) : null,
+                            'competitions' => [
+                                Fixture::COMPETITION_FRIENDLY => 'Amical',
+                                Fixture::COMPETITION_LEAGUE => 'Championnat',
+                                Fixture::COMPETITION_CUP => 'Coupe',
+                            ],
+                        ]);
+                    }
+                }
+
+                $strategy = null;
+                if (($matchContext['strategyId'] ?? 0) > 0) {
+                    $candidate = $strategyRepository->find($matchContext['strategyId']);
+                    if ($candidate instanceof TacticalStrategy && $candidate->getTeam()?->getId() === $selectedTeam->getId()) {
+                        $strategy = $candidate;
+                        $strategy->incrementUsage();
+                        $strategy->touch();
+                    }
+                }
+
+                $fixture = null;
+                if ($kickoffAt instanceof \DateTimeImmutable) {
+                    $fixture = (new Fixture())
+                        ->setTeam($selectedTeam)
+                        ->setCoach($coach)
+                        ->setOpponent($opponentName)
+                        ->setMatchDate($kickoffAt)
+                        ->setVenue($matchContext['venue'])
+                        ->setCompetition($matchContext['competition'] !== '' ? $matchContext['competition'] : null)
+                        ->setNotes($this->buildFixtureNotes($matchContext))
+                        ->setTacticalStrategy($strategy);
+
+                    $em->persist($fixture);
+                }
+
+                if ($strategy instanceof TacticalStrategy) {
+                    $em->persist($strategy);
+                }
+                $em->flush();
+
+                $matchContext['strategyId'] = $strategy?->getId() ?? 0;
+                $matchContext['strategyName'] = $strategy?->getName() ?? '';
+
+                $request->getSession()->set('match_preparation', [
+                    'scenario' => 'real_vs_fictional',
+                    'context' => $matchContext,
+                    'fixtureId' => $fixture?->getId(),
+                    'homeInsights' => $selectedTeamPreview,
+                    'home' => $this->buildRealTeamData($selectedTeam, 'home', $selectedTeam->getName(), $attendanceRepository, $playerMatchStatRepository),
+                    'away' => $this->buildFictionalTeamData('away', $opponentName, ''),
+                ]);
+
+                $this->addFlash('success', $fixture instanceof Fixture
+                    ? ($strategy instanceof TacticalStrategy
+                        ? 'Match ajouté au calendrier et tactique assignée.'
+                        : 'Match ajouté au calendrier.')
+                    : ($strategy instanceof TacticalStrategy
+                        ? 'Tactique sélectionnée pour ce match.'
+                        : 'Préparation de match enregistrée.'));
+
+                return $this->redirectToRoute('app_match_board');
+            }
+        }
+
         return $this->render('match/prepare.html.twig', [
-            'scenario' => $scenario,
-            'customTeams' => $customTeams,
-            'selectedCustomTeam' => $selectedCustomTeam,
+            'teams' => $teams,
+            'selectedTeamId' => $selectedTeamId,
+            'selectedTeam' => $selectedTeam,
+            'opponentName' => $opponentName,
             'selectedTeamPreview' => $selectedTeamPreview,
             'matchContext' => $matchContext,
+            'strategiesByTeam' => $strategiesByTeam,
+            'selectedStrategy' => $selectedStrategy instanceof TacticalStrategy ? $this->buildStrategyCardData($selectedStrategy) : null,
+            'competitions' => [
+                Fixture::COMPETITION_FRIENDLY => 'Amical',
+                Fixture::COMPETITION_LEAGUE => 'Championnat',
+                Fixture::COMPETITION_CUP => 'Coupe',
+            ],
         ]);
     }
 
@@ -282,18 +370,144 @@ class MatchController extends AbstractController
     private function buildMatchContext(Request $request): array
     {
         return [
-            'opponentLabel' => trim((string) $request->request->get('opponent_label', $request->query->get('opponent_label', ''))),
-            'competition' => trim((string) $request->request->get('competition', $request->query->get('competition', ''))),
+            'competition' => trim((string) $request->request->get('competition', $request->query->get('competition', Fixture::COMPETITION_FRIENDLY))),
             'kickoff' => trim((string) $request->request->get('kickoff', $request->query->get('kickoff', ''))),
             'venue' => trim((string) $request->request->get('venue', $request->query->get('venue', 'home'))),
             'objective' => trim((string) $request->request->get('objective', $request->query->get('objective', ''))),
-            'shape' => trim((string) $request->request->get('shape', $request->query->get('shape', '4-3-3'))),
+            'shape' => trim((string) $request->request->get('shape', $request->query->get('shape', ''))),
             'pressingPlan' => trim((string) $request->request->get('pressing_plan', $request->query->get('pressing_plan', ''))),
             'inPossessionPlan' => trim((string) $request->request->get('in_possession_plan', $request->query->get('in_possession_plan', ''))),
             'transitionPlan' => trim((string) $request->request->get('transition_plan', $request->query->get('transition_plan', ''))),
             'setPiecesPlan' => trim((string) $request->request->get('set_pieces_plan', $request->query->get('set_pieces_plan', ''))),
             'watchouts' => trim((string) $request->request->get('watchouts', $request->query->get('watchouts', ''))),
+            'strategyId' => (int) $request->request->get('strategy_id', $request->query->get('strategy_id', 0)),
+            'strategyName' => '',
+            'strategyMode' => '',
         ];
+    }
+
+    /**
+     * @param TacticalStrategy[] $strategies
+     *
+     * @return array{
+     *   all: array<int, array<string, mixed>>,
+     *   free: array<int, array<string, mixed>>,
+     *   formation: array<int, array<string, mixed>>,
+     *   counts: array{total:int, free:int, formation:int},
+     *   defaultId: int
+     * }
+     */
+    private function buildStrategyBankForTeam(array $strategies): array
+    {
+        $cards = array_map(fn (TacticalStrategy $strategy) => $this->buildStrategyCardData($strategy), $strategies);
+        $free = array_values(array_filter($cards, static fn (array $card): bool => $card['mode'] === TacticalStrategy::MODE_FREE));
+        $formation = array_values(array_filter($cards, static fn (array $card): bool => $card['mode'] === TacticalStrategy::MODE_FORMATION));
+
+        $defaultId = 0;
+        foreach ($cards as $card) {
+            if ($card['isDefault']) {
+                $defaultId = $card['id'];
+                break;
+            }
+        }
+
+        return [
+            'all' => $cards,
+            'free' => $free,
+            'formation' => $formation,
+            'counts' => [
+                'total' => \count($cards),
+                'free' => \count($free),
+                'formation' => \count($formation),
+            ],
+            'defaultId' => $defaultId,
+        ];
+    }
+
+    private function buildStrategyCardData(TacticalStrategy $strategy): array
+    {
+        $notesCount = 0;
+        foreach ([$strategy->getInPossessionNotes(), $strategy->getOutOfPossessionNotes(), $strategy->getTransitionNotes(), $strategy->getSetPieceNotes()] as $note) {
+            if (\is_string($note) && trim($note) !== '') {
+                ++$notesCount;
+            }
+        }
+
+        return [
+            'id' => $strategy->getId() ?? 0,
+            'name' => $strategy->getName(),
+            'mode' => $strategy->getMode(),
+            'modeLabel' => $strategy->isFree() ? 'Plan libre' : 'Plan formation',
+            'formation' => $strategy->getFormation(),
+            'isDefault' => $strategy->isDefault(),
+            'usageCount' => $strategy->getUsageCount(),
+            'updatedAtLabel' => $strategy->getUpdatedAt()->format('d/m/Y H:i'),
+            'notesCount' => $notesCount,
+            'inPossessionNotes' => $strategy->getInPossessionNotes() ?? '',
+            'outOfPossessionNotes' => $strategy->getOutOfPossessionNotes() ?? '',
+            'transitionNotes' => $strategy->getTransitionNotes() ?? '',
+            'setPieceNotes' => $strategy->getSetPieceNotes() ?? '',
+        ];
+    }
+
+    private function applyStrategyDefaultsToMatchContext(array $matchContext, TacticalStrategy $strategy, Request $request): array
+    {
+        $shapeProvided = $request->request->has('shape') || $request->query->has('shape');
+        if ($strategy->isFormation() && !$shapeProvided) {
+            $matchContext['shape'] = $strategy->getFormation();
+        }
+
+        if ($matchContext['objective'] === '' && $strategy->getDescription()) {
+            $matchContext['objective'] = $strategy->getDescription();
+        }
+
+        if ($matchContext['pressingPlan'] === '' && $strategy->getOutOfPossessionNotes()) {
+            $matchContext['pressingPlan'] = $strategy->getOutOfPossessionNotes();
+        }
+
+        if ($matchContext['inPossessionPlan'] === '' && $strategy->getInPossessionNotes()) {
+            $matchContext['inPossessionPlan'] = $strategy->getInPossessionNotes();
+        }
+
+        if ($matchContext['transitionPlan'] === '' && $strategy->getTransitionNotes()) {
+            $matchContext['transitionPlan'] = $strategy->getTransitionNotes();
+        }
+
+        if ($matchContext['setPiecesPlan'] === '' && $strategy->getSetPieceNotes()) {
+            $matchContext['setPiecesPlan'] = $strategy->getSetPieceNotes();
+        }
+
+        return $matchContext;
+    }
+
+    private function buildFixtureNotes(array $matchContext): ?string
+    {
+        $sections = [];
+
+        if (($matchContext['objective'] ?? '') !== '') {
+            $sections[] = 'Objectif: '.$matchContext['objective'];
+        }
+        if (($matchContext['pressingPlan'] ?? '') !== '') {
+            $sections[] = 'Sans ballon: '.$matchContext['pressingPlan'];
+        }
+        if (($matchContext['inPossessionPlan'] ?? '') !== '') {
+            $sections[] = 'Avec ballon: '.$matchContext['inPossessionPlan'];
+        }
+        if (($matchContext['transitionPlan'] ?? '') !== '') {
+            $sections[] = 'Transitions: '.$matchContext['transitionPlan'];
+        }
+        if (($matchContext['setPiecesPlan'] ?? '') !== '') {
+            $sections[] = 'CPA: '.$matchContext['setPiecesPlan'];
+        }
+        if (($matchContext['watchouts'] ?? '') !== '') {
+            $sections[] = 'Vigilance: '.$matchContext['watchouts'];
+        }
+
+        if ($sections === []) {
+            return null;
+        }
+
+        return implode("\n\n", $sections);
     }
 
     private function buildTeamPreparationInsights(
@@ -354,6 +568,7 @@ class MatchController extends AbstractController
                 'available' => \count($available),
                 'unavailable' => \count($unavailable),
             ],
+            'attendanceRate' => $this->calculateTeamAttendanceRate($attendanceSummary),
             'positionCounts' => $positionCounts,
             'recommendedShape' => $this->guessRecommendedShape($positionCounts),
             'available' => $available,
@@ -373,5 +588,24 @@ class MatchController extends AbstractController
         }
 
         return '4-3-3';
+    }
+
+    /**
+     * @param array<int, array{total:int,present:int,absent:int,excused:int,late:int,rate:int}> $attendanceSummary
+     */
+    private function calculateTeamAttendanceRate(array $attendanceSummary): int
+    {
+        $total = 0;
+        $present = 0;
+        foreach ($attendanceSummary as $row) {
+            $total += (int) ($row['total'] ?? 0);
+            $present += (int) ($row['present'] ?? 0);
+        }
+
+        if ($total <= 0) {
+            return 0;
+        }
+
+        return (int) round(($present / $total) * 100);
     }
 }

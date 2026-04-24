@@ -39,12 +39,72 @@
 
 /* ── Match Prepare ───────────────────────────────────────────── */
 .tactical-match-prepare { display: grid; gap: var(--space-md); }
+.tactical-match-prepare--refined { gap: var(--space-md); }
+.tactical-match-prepare__hero {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: var(--space-md);
+}
+.tactical-match-prepare__hero-card {
+  background: rgba(29,32,34,0.7);
+  border: 1px solid var(--outline-variant);
+  border-top-color: rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+.tactical-match-prepare__hero-card--accent {
+  border-color: rgba(199,243,0,0.22);
+  box-shadow: 0 0 0 1px rgba(199,243,0,0.06);
+}
+.tactical-match-prepare__hero-label {
+  font-size: var(--text-label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-variant);
+}
+.tactical-match-prepare__hero-value {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--on-surface);
+}
+.tactical-match-prepare__hero-meta {
+  font-size: var(--text-label-sm);
+  color: var(--on-surface-variant);
+}
 .tactical-match-prepare__layout {
   display: grid;
-  grid-template-columns: minmax(0, 720px) minmax(280px, 1fr);
-  gap: var(--space-sm); align-items: start;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr);
+  gap: var(--space-md);
+  align-items: start;
 }
-.tactical-match-prepare__card { display: grid; gap: var(--space-md); }
+.tactical-match-prepare__section {
+  display: grid;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.tactical-match-prepare__selected-plan {
+  min-height: 88px;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--surface-container-low);
+  display: grid;
+  gap: 0.25rem;
+}
+.tactical-match-prepare__selected-plan strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--secondary-container);
+}
+.tactical-match-prepare__selected-plan span {
+  font-size: var(--text-label-sm);
+  color: var(--on-surface-variant);
+}
 .tactical-match-prepare__textarea { min-height: 112px; }
 .tactical-match-prepare__checklist {
   margin: 0;
@@ -54,7 +114,142 @@
   color: var(--on-surface-variant);
   font-size: 0.875rem;
 }
+.tactical-match-prepare__hidden-select { display: none; }
+
+.tactical-plan-bank {
+  display: grid;
+  gap: 1rem;
+}
+.tactical-plan-bank__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.tactical-plan-bank__group {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--outline-variant);
+}
+.tactical-plan-bank__group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.tactical-plan-bank__group-head strong {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--on-surface);
+}
+.tactical-plan-bank__group-head span {
+  font-size: var(--text-label-sm);
+  color: var(--on-surface-variant);
+}
+.tactical-plan-bank__cards {
+  display: grid;
+  gap: 0.75rem;
+}
+.tactical-plan-card {
+  width: 100%;
+  text-align: left;
+  background: rgba(29,32,34,0.72);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem;
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: border-color 180ms, background 180ms, transform 180ms, box-shadow 180ms;
+  display: grid;
+  gap: 0.65rem;
+}
+.tactical-plan-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.tactical-plan-card--active {
+  border-color: rgba(199,243,0,0.45);
+  background: rgba(199,243,0,0.06);
+  box-shadow: 0 0 0 1px rgba(199,243,0,0.08);
+}
+.tactical-plan-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.tactical-plan-card__head strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+.tactical-plan-card__head span {
+  display: block;
+  font-size: var(--text-label-sm);
+  color: var(--on-surface-variant);
+  margin-top: 0.25rem;
+}
+.tactical-plan-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: var(--text-label-sm);
+  color: var(--on-surface-variant);
+}
+.tactical-plan-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.tactical-plan-card__tags span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--outline-variant);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+.tactical-plan-bank__empty {
+  padding: 0.9rem 1rem;
+  border: 1px dashed var(--outline-variant);
+  border-radius: var(--radius-lg);
+  color: var(--on-surface-variant);
+  font-size: var(--text-label-sm);
+}
+.tactical-plan-bank__empty--large {
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
 .tactical-match-preview { display: grid; gap: var(--space-md); }
+.tactical-match-preview--refined {
+  position: sticky;
+  top: 1rem;
+}
+.tactical-match-preview__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.tactical-match-preview__stats div {
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+}
+.tactical-match-preview__stats p {
+  margin-top: 0.35rem;
+  color: var(--on-surface-variant);
+  font-size: var(--text-label-sm);
+}
 .tactical-match-preview__header {
   display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
   padding: var(--space-sm) var(--space-md);
@@ -145,5 +340,20 @@
   .tactical-match-panel { max-height: 320px; border-right: none; border-bottom: 1px solid var(--outline-variant); }
   .tactical-match-briefing,
   .tactical-match-prepare__layout,
-  .tactical-match-preview__grid { grid-template-columns: 1fr; }
+  .tactical-match-preview__grid,
+  .tactical-match-prepare__hero { grid-template-columns: 1fr; }
+  .tactical-match-preview--refined { position: static; }
+}
+
+@media (max-width: 720px) {
+  .tactical-match-prepare__hero,
+  .tactical-match-preview__grid,
+  .tactical-match-preview__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .tactical-plan-bank__summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

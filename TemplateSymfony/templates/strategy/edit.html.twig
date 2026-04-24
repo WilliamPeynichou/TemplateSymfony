@@ -1,9 +1,10 @@
 {% extends 'layout/app.html.twig' %}
-{% block title %}{{ strategy.name }} — Édition stratégie{% endblock %}
+{% block title %}{{ strategy.name }} — Compo & tactique{% endblock %}
 
 {% block stylesheets %}
     <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
     <link rel="stylesheet" href="{{ asset('styles/strategy.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/composition.css') }}">
 {% endblock %}
 
 {% block javascripts %}
@@ -15,23 +16,44 @@
 <div class="tactical-page-header">
     <div>
         <h1 class="tactical-page-header__title"><em>{{ strategy.name }}</em></h1>
-        <p class="tactical-page-header__sub">{{ strategy.formation }} · dernière mise à jour {{ strategy.updatedAt|date('d/m/Y H:i') }}</p>
+        <p class="tactical-page-header__sub">
+            {% if strategy.isFormation %}{{ strategy.formation }} · {% endif %}
+            {{ strategy.isFree ? 'Composition libre' : 'Composition structurée' }}
+            · dernière mise à jour {{ strategy.updatedAt|date('d/m/Y H:i') }}
+        </p>
     </div>
-    <div style="display:flex;gap:0.75rem;">
-        <a href="{{ path('app_strategy_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">← Stratégies</a>
+    <div style="display:flex;gap:0.75rem;align-items:center;">
+        {# Toggle mode #}
+        <form method="post" action="{{ path('app_strategy_toggle_mode', {teamId: team.id, id: strategy.id}) }}"
+              onsubmit="return confirm('Basculer en mode {{ strategy.isFree ? 'formation' : 'libre' }} ? Les slots seront {{ strategy.isFree ? 'réinitialisés depuis la formation ' ~ strategy.formation : 'conservés' }}.')">
+            <input type="hidden" name="_token" value="{{ csrf_token('toggle_mode_' ~ strategy.id) }}">
+            <button type="submit" class="tactical-btn tactical-btn--sm {{ strategy.isFree ? 'tactical-btn--outline' : 'tactical-btn--outline' }}">
+                {% if strategy.isFree %}
+                    ⬡ Passer en formation
+                {% else %}
+                    ⬡ Passer en libre
+                {% endif %}
+            </button>
+        </form>
+        <a href="{{ path('app_strategy_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">← Tactiques</a>
         <span class="tactical-save-indicator" data-strategy-target="saveIndicator"></span>
     </div>
 </div>
 
+{% for message in app.flashes('success') %}
+    <div class="fm-flash fm-flash--success">{{ message }}</div>
+{% endfor %}
+
 <div class="tactical-page-body fm-strategy-editor"
      data-controller="strategy"
+     data-strategy-mode-value="{{ strategy.mode }}"
      data-strategy-save-url-value="{{ path('app_strategy_save', {teamId: team.id, id: strategy.id}) }}"
      data-strategy-apply-url-value="{{ path('app_strategy_apply_formation', {teamId: team.id, id: strategy.id}) }}"
      data-strategy-roles-value="{{ roles|json_encode|e('html_attr') }}">
 
     <div class="fm-strategy-layout">
 
-        {# ─────────── Colonne gauche : identité + formation ─────────── #}
+        {# ─────────── Colonne gauche ─────────── #}
         <aside class="fm-strategy-aside fm-strategy-aside--left">
             <div class="fm-field">
                 <label>Nom</label>
@@ -44,18 +66,22 @@
                           data-strategy-target="description" data-action="change->strategy#markDirty">{{ strategy.description }}</textarea>
             </div>
 
-            <div class="fm-field">
+            {# Formation : visible en mode formation uniquement #}
+            {% if strategy.isFormation %}
+            <div class="fm-field" data-strategy-formation-section>
                 <label>Formation</label>
                 <select class="fm-input" data-strategy-target="formation" data-action="change->strategy#changeFormation">
                     {% for key, f in formations %}
                         <option value="{{ key }}" {{ strategy.formation == key ? 'selected' : '' }}>{{ f.label }}</option>
                     {% endfor %}
                 </select>
-                <span class="fm-field__help">Changer la formation repositionne les slots (les joueurs assignés sont conservés).</span>
+                <span class="fm-field__help">Changer la formation repositionne les slots.</span>
             </div>
+            {% endif %}
 
+            {# Instructions tactiques : mode formation uniquement (section repliable en libre) #}
+            {% if strategy.isFormation %}
             <hr class="fm-divider">
-
             <h3 class="fm-aside__title">Instructions d'équipe</h3>
 
             {% set chipFields = [
@@ -85,8 +111,7 @@
             {% endfor %}
 
             <hr class="fm-divider">
-
-            <h3 class="fm-aside__title">Notes tactiques détaillées</h3>
+            <h3 class="fm-aside__title">Notes tactiques</h3>
             <div class="fm-field">
                 <label>En possession</label>
                 <textarea class="fm-input fm-input--area" rows="3" placeholder="Construction, circulation, temps forts…"
@@ -94,7 +119,7 @@
             </div>
             <div class="fm-field">
                 <label>Sans ballon</label>
-                <textarea class="fm-input fm-input--area" rows="3" placeholder="Déclencheur pressing, couverture, replis…"
+                <textarea class="fm-input fm-input--area" rows="3" placeholder="Pressing, couverture, replis…"
                           data-strategy-target="outOfPossessionNotes" data-action="change->strategy#markDirty">{{ strategy.outOfPossessionNotes }}</textarea>
             </div>
             <div class="fm-field">
@@ -104,34 +129,73 @@
             </div>
             <div class="fm-field">
                 <label>Coups de pied arrêtés</label>
-                <textarea class="fm-input fm-input--area" rows="2" placeholder="Corners, coups francs, penalty, engagement…"
+                <textarea class="fm-input fm-input--area" rows="2" placeholder="Corners, coups francs, penalty…"
                           data-strategy-target="setPieceNotes" data-action="change->strategy#markDirty">{{ strategy.setPieceNotes }}</textarea>
             </div>
+
+            {% else %}
+            {# Mode libre : notes globales simplifiées #}
+            <hr class="fm-divider">
+            <h3 class="fm-aside__title">Notes du plan</h3>
+            <div class="fm-field">
+                <label>Notes générales</label>
+                <textarea class="fm-input fm-input--area" rows="6" placeholder="Objectifs, consignes, idées tactiques…"
+                          data-strategy-target="inPossessionNotes" data-action="change->strategy#markDirty">{{ strategy.inPossessionNotes }}</textarea>
+            </div>
+            {% endif %}
+
+            {# Targets masqués pour la compatibilité JS en mode libre #}
+            {% if strategy.isFree %}
+                <textarea style="display:none" data-strategy-target="description"></textarea>
+                <textarea style="display:none" data-strategy-target="outOfPossessionNotes"></textarea>
+                <textarea style="display:none" data-strategy-target="transitionNotes"></textarea>
+                <textarea style="display:none" data-strategy-target="setPieceNotes"></textarea>
+                <select style="display:none" data-strategy-target="formation"><option value="{{ strategy.formation }}" selected>{{ strategy.formation }}</option></select>
+            {% endif %}
         </aside>
 
-        {# ─────────── Centre : terrain interactif ─────────── #}
+        {# ─────────── Centre : terrain ─────────── #}
         <section class="fm-strategy-center">
             <div class="fm-pitch-wrap">
-                <svg class="fm-pitch-svg" viewBox="0 0 68 105" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="68" height="105" fill="#101415"/>
+                <svg class="fm-pitch-svg" viewBox="0 0 68 105" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="pitchStripe" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#101415"/>
+                            <stop offset="100%" stop-color="#161b1c"/>
+                        </linearGradient>
+                    </defs>
+
+                    <rect width="68" height="105" fill="url(#pitchStripe)"/>
                     {% for i in 0..6 %}
-                        <rect x="0" y="{{ i * 15 }}" width="68" height="7.5" fill="{{ i % 2 == 0 ? '#101415' : 'rgba(255,255,255,0.03)' }}"/>
+                        <rect x="0" y="{{ i * 15 }}" width="68" height="7.5" fill="{{ i % 2 == 0 ? '#101415' : '#141919' }}" opacity="{{ i % 2 == 0 ? 1 : 0.9 }}"/>
                     {% endfor %}
-                    <rect x="1" y="1" width="66" height="103" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
-                    <line x1="1" y1="52.5" x2="67" y2="52.5" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
-                    <circle cx="34" cy="52.5" r="9.15" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
-                    <circle cx="34" cy="52.5" r="0.7" fill="#c7f300"/>
-                    <rect x="13.84" y="1" width="40.32" height="16.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
-                    <rect x="13.84" y="87.5" width="40.32" height="16.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
-                    <rect x="24.84" y="98.5" width="18.32" height="5.5" fill="none" stroke="rgba(199,243,0,0.25)" stroke-width="0.5"/>
+
+                    <g fill="none" stroke="rgba(199,243,0,0.42)" stroke-width="0.55" vector-effect="non-scaling-stroke" shape-rendering="geometricPrecision">
+                        <rect x="1" y="1" width="66" height="103"/>
+                        <line x1="1" y1="52.5" x2="67" y2="52.5"/>
+                        <circle cx="34" cy="52.5" r="9.2"/>
+                        <rect x="13.84" y="1" width="40.32" height="16.5"/>
+                        <rect x="13.84" y="87.5" width="40.32" height="16.5"/>
+                        <rect x="24.84" y="1" width="18.32" height="5.5"/>
+                        <rect x="24.84" y="98.5" width="18.32" height="5.5"/>
+                    </g>
+
+                    <g fill="rgba(199,243,0,0.85)">
+                        <circle cx="34" cy="52.5" r="0.72"/>
+                        <circle cx="34" cy="12.2" r="0.55"/>
+                        <circle cx="34" cy="92.8" r="0.55"/>
+                    </g>
                 </svg>
-                <div class="fm-pitch-slots" data-strategy-target="pitch">
+                <div class="fm-pitch-slots {{ strategy.isFree ? 'fm-pitch-slots--free' : '' }}"
+                     data-strategy-target="pitch">
                     {% for slot in strategy.slots %}
                         {% set player = slot.player %}
                         {% set suggested = null %}
-                        {% for s in suggestions %}
-                            {% if s.slot == slot.slotIndex %}{% set suggested = s.suggestedPlayer %}{% endif %}
-                        {% endfor %}
+                        {% if strategy.isFormation %}
+                            {% for s in suggestions %}
+                                {% if s.slot == slot.slotIndex %}{% set suggested = s.suggestedPlayer %}{% endif %}
+                            {% endfor %}
+                        {% endif %}
                         <div class="fm-pitch-slot fm-pitch-slot--{{ slot.positionGroup|lower }}"
                              data-strategy-target="slot"
                              data-slot-index="{{ slot.slotIndex }}"
@@ -151,22 +215,32 @@
                                 <span class="fm-pitch-slot__num">{% if player %}{{ player.number }}{% else %}{{ slot.label }}{% endif %}</span>
                             </div>
                             <div class="fm-pitch-slot__name">
-                                {% if player %}{{ player.lastName }}{% else %}<em>— libre —</em>{% endif %}
+                                {% if player %}{{ player.lastName }}{% else %}<em>{{ strategy.isFree ? '?' : '— libre —' }}</em>{% endif %}
                             </div>
+                            {% if strategy.isFormation %}
                             <div class="fm-pitch-slot__role">{{ slot.role|replace({'_':' '}) }} · <span class="fm-duty fm-duty--{{ slot.duty }}">{{ slot.dutyLabel }}</span></div>
+                            {% endif %}
                         </div>
                     {% endfor %}
                 </div>
             </div>
             <div class="fm-pitch-foot">
-                <button type="button" class="tactical-btn tactical-btn--outline"
-                        data-action="click->strategy#autoAssign">Auto-composer (meilleur XI)</button>
+                {% if strategy.isFree %}
+                    <button type="button" class="tactical-btn tactical-btn--danger"
+                            data-strategy-target="removeSlotBtn"
+                            data-action="click->strategy#removeSelectedSlot" style="display:none">
+                        Retirer le slot
+                    </button>
+                {% else %}
+                    <button type="button" class="tactical-btn tactical-btn--outline"
+                            data-action="click->strategy#autoAssign">Auto-composer (meilleur XI)</button>
+                {% endif %}
                 <button type="button" class="tactical-btn tactical-btn--primary"
                         data-action="click->strategy#save">Sauvegarder</button>
             </div>
         </section>
 
-        {# ─────────── Colonne droite : inspecteur slot + effectif ─────────── #}
+        {# ─────────── Colonne droite : inspecteur ─────────── #}
         <aside class="fm-strategy-aside fm-strategy-aside--right">
             <div class="fm-inspector" data-strategy-target="inspector" hidden>
                 <header class="fm-inspector__head">
@@ -176,26 +250,50 @@
 
                 <div class="fm-field">
                     <label>Joueur assigné</label>
-                    <select class="fm-input" data-strategy-target="inspectorPlayer" data-action="change->strategy#updatePlayer">
-                        <option value="">— Libre —</option>
-                        {% for p in players %}
-                            <option value="{{ p.id }}" data-position-group="{{ p.positionGroup }}" data-position="{{ p.position }}">
-                                #{{ p.number }} {{ p.fullName }} ({{ p.position }})
-                            </option>
-                        {% endfor %}
-                    </select>
+                    {% if strategy.isFree %}
+                        <div class="fm-selected-player" data-strategy-target="selectedPlayerCard">
+                            <span class="fm-selected-player__empty">Aucun joueur affecté</span>
+                        </div>
+                        <input type="hidden" data-strategy-target="inspectorPlayer" value="">
+                        <button type="button" class="tactical-btn tactical-btn--sm tactical-btn--outline"
+                                data-action="click->strategy#clearPlayer">
+                            Libérer le slot
+                        </button>
+                    {% else %}
+                        <select class="fm-input" data-strategy-target="inspectorPlayer" data-action="change->strategy#updatePlayer">
+                            <option value="">— Libre —</option>
+                            {% for p in players %}
+                                <option value="{{ p.id }}" data-position-group="{{ p.positionGroup }}" data-position="{{ p.position }}">
+                                    #{{ p.number }} {{ p.fullName }} ({{ p.position }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div style="display:none" data-strategy-target="selectedPlayerCard"></div>
+                    {% endif %}
+                    {% if strategy.isFormation %}
                     <div class="fm-suggestion" data-strategy-target="suggestion" hidden>
                         Suggestion : <strong data-strategy-target="suggestionName"></strong>
                         · <span data-strategy-target="suggestionScore"></span>%
                         <button type="button" class="fm-suggestion__apply" data-action="click->strategy#applySuggestion">Appliquer</button>
                     </div>
+                    {% else %}
+                        <div data-strategy-target="suggestion" hidden></div>
+                    {% endif %}
                 </div>
 
+                <div class="fm-field">
+                    <label>Note / instructions</label>
+                    <textarea class="fm-input fm-input--area" rows="4"
+                              placeholder="{% if strategy.isFree %}Notes libres sur ce joueur…{% else %}Instructions individuelles…{% endif %}"
+                              data-strategy-target="inspectorInstructions"
+                              data-action="change->strategy#updateInstructions"></textarea>
+                </div>
+
+                {% if strategy.isFormation %}
                 <div class="fm-field">
                     <label>Rôle</label>
                     <select class="fm-input" data-strategy-target="inspectorRole" data-action="change->strategy#updateRole"></select>
                 </div>
-
                 <div class="fm-field">
                     <label>Devoir</label>
                     <div class="fm-chip-row">
@@ -210,20 +308,91 @@
                         {% endfor %}
                     </div>
                 </div>
-
-                <div class="fm-field">
-                    <label>Instructions individuelles</label>
-                    <textarea class="fm-input fm-input--area" rows="4"
-                              placeholder="Couverture du couloir, pressing sur le porteur, temporisation…"
-                              data-strategy-target="inspectorInstructions"
-                              data-action="change->strategy#updateInstructions"></textarea>
-                </div>
+                {% else %}
+                    {# Targets masqués pour compatibilité JS #}
+                    <select style="display:none" data-strategy-target="inspectorRole"></select>
+                    <button style="display:none" data-strategy-target="dutyBtn" data-value="support"></button>
+                {% endif %}
             </div>
 
             <div class="fm-inspector-empty" data-strategy-target="inspectorEmpty">
-                <p>Cliquez un slot sur le terrain pour éditer son rôle, son devoir et le joueur affecté.</p>
-                <p class="fm-inspector-empty__hint">Utilisez <strong>Auto-composer</strong> pour laisser le système suggérer le meilleur XI à partir des suitability.</p>
+                {% if strategy.isFree %}
+                {% else %}
+                    <p>Cliquez un slot sur le terrain pour éditer son rôle, son devoir et le joueur affecté.</p>
+                    <p class="fm-inspector-empty__hint">Utilisez <strong>Auto-composer</strong> pour laisser le système suggérer le meilleur XI.</p>
+                {% endif %}
             </div>
+
+            {% if strategy.isFree %}
+                <hr class="fm-divider">
+                <div class="fm-roster fm-roster--full">
+                    <div class="fm-roster__head">
+                        <strong>Effectif utilisé</strong>
+                        <span>{{ players|length }} joueur{{ players|length > 1 ? 's' : '' }} · équipe {{ team.name }}</span>
+                    </div>
+                    <div class="fm-roster__filters">
+                        <button type="button" class="fm-roster__filter fm-roster__filter--active"
+                                data-strategy-target="rosterFilter"
+                                data-filter="all"
+                                data-action="click->strategy#filterRoster">
+                            Tous
+                        </button>
+                        <button type="button" class="fm-roster__filter"
+                                data-strategy-target="rosterFilter"
+                                data-filter="GK"
+                                data-action="click->strategy#filterRoster">
+                            GK
+                        </button>
+                        <button type="button" class="fm-roster__filter"
+                                data-strategy-target="rosterFilter"
+                                data-filter="DEF"
+                                data-action="click->strategy#filterRoster">
+                            Déf
+                        </button>
+                        <button type="button" class="fm-roster__filter"
+                                data-strategy-target="rosterFilter"
+                                data-filter="MID"
+                                data-action="click->strategy#filterRoster">
+                            Mil
+                        </button>
+                        <button type="button" class="fm-roster__filter"
+                                data-strategy-target="rosterFilter"
+                                data-filter="ATT"
+                                data-action="click->strategy#filterRoster">
+                            Att
+                        </button>
+                    </div>
+                    <div class="fm-roster__list">
+                        {% for p in players %}
+                            <button type="button"
+                                    class="fm-roster__item"
+                                    data-strategy-target="rosterPlayer"
+                                    data-action="click->strategy#pickRosterPlayer"
+                                    data-player-id="{{ p.id }}"
+                                    data-player-name="{{ p.fullName }}"
+                                    data-player-last-name="{{ p.lastName }}"
+                                    data-player-number="{{ p.number }}"
+                                    data-player-position="{{ p.position }}"
+                                    data-player-group="{{ p.positionGroup }}"
+                                    data-filter-group="{{ p.positionGroup }}"
+                                    draggable="true">
+                                <div class="fm-roster__main">
+                                    <span class="fm-roster__number">#{{ p.number }}</span>
+                                    <span class="fm-roster__name">{{ p.fullName }}</span>
+                                </div>
+                                <div class="fm-roster__meta">
+                                    <span class="fm-roster__badge fm-roster__badge--{{ p.positionGroup|lower }}">{{ p.position }}</span>
+                                    {% if p.statusLabel is defined %}
+                                        <span class="fm-roster__status">{{ p.statusLabel }}</span>
+                                    {% endif %}
+                                </div>
+                            </button>
+                        {% else %}
+                            <p class="fm-roster__empty">Aucun joueur dans l’équipe sélectionnée.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
         </aside>
     </div>
 </div>

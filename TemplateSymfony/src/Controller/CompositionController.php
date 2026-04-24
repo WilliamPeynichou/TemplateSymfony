@@ -3,13 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Composition;
-use App\Entity\PlayerPosition;
+use App\Entity\FormationSlot;
+use App\Entity\TacticalStrategy;
 use App\Entity\Team;
-use App\Repository\PlayerRepository;
+use App\Repository\TacticalStrategyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -19,39 +19,29 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class CompositionController extends AbstractController
 {
     #[Route('', name: 'app_composition_index')]
-    public function index(Team $team, PlayerRepository $playerRepository): Response
+    public function index(
+        Team $team,
+        EntityManagerInterface $em,
+        TacticalStrategyRepository $strategyRepository,
+    ): Response
     {
         $this->denyAccessUnlessGranted('COACH', $team);
 
-        $composition = $team->getComposition();
-        $players = $playerRepository->findByTeamOrderedByNumber($team);
+        $strategy = $this->resolveWorkspaceStrategy($team, $em, $strategyRepository);
 
-        $placedPlayerIds = [];
-        $positions = [];
-        if ($composition) {
-            foreach ($composition->getPlayerPositions() as $pp) {
-                $placedPlayerIds[] = $pp->getPlayer()->getId();
-                $positions[$pp->getPlayer()->getId()] = [
-                    'posX'         => $pp->getPosX(),
-                    'posY'         => $pp->getPosY(),
-                    'instructions' => $pp->getInstructions(),
-                ];
-            }
-        }
-
-        $benchPlayers = array_filter($players, fn ($p) => !in_array($p->getId(), $placedPlayerIds));
-
-        return $this->render('composition/index.html.twig', [
-            'team'          => $team,
-            'composition'   => $composition,
-            'players'       => $players,
-            'benchPlayers'  => array_values($benchPlayers),
-            'positions'     => $positions,
+        return $this->redirectToRoute('app_strategy_edit', [
+            'teamId' => $team->getId(),
+            'id' => $strategy->getId(),
         ]);
     }
 
     #[Route('/save', name: 'app_composition_save', methods: ['POST'])]
-    public function save(Team $team, Request $request, EntityManagerInterface $em): JsonResponse
+    public function save(
+        Team $team,
+        \Symfony\Component\HttpFoundation\Request $request,
+        EntityManagerInterface $em,
+        TacticalStrategyRepository $strategyRepository,
+    ): JsonResponse
     {
         $this->denyAccessUnlessGranted('COACH', $team);
 
@@ -60,54 +50,114 @@ class CompositionController extends AbstractController
             return $this->json(['error' => 'Invalid data'], 400);
         }
 
-        $composition = $team->getComposition();
-        if (!$composition) {
-            $composition = new Composition();
-            $composition->setTeam($team);
-            $team->setComposition($composition);
-            $em->persist($composition);
-        }
+        $strategy = $this->resolveWorkspaceStrategy($team, $em, $strategyRepository);
+        $strategy->setMode(TacticalStrategy::MODE_FREE);
 
-        // Index existing PlayerPositions by player id
         $existingByPlayerId = [];
-        foreach ($composition->getPlayerPositions() as $pp) {
-            $existingByPlayerId[$pp->getPlayer()->getId()] = $pp;
+        foreach ($strategy->getSlots() as $slot) {
+            if (!$slot->getPlayer()) {
+                $em->remove($slot);
+                continue;
+            }
+
+            $existingByPlayerId[$slot->getPlayer()->getId()] = $slot;
         }
 
         $receivedPlayerIds = [];
+        $slotIndex = 1;
         foreach ($data['positions'] as $item) {
             $playerId = (int) $item['playerId'];
             $receivedPlayerIds[] = $playerId;
 
             if (isset($existingByPlayerId[$playerId])) {
-                $pp = $existingByPlayerId[$playerId];
+                $slot = $existingByPlayerId[$playerId];
             } else {
                 $player = $em->find(\App\Entity\Player::class, $playerId);
-                if (!$player || $player->getTeam()->getId() !== $team->getId()) continue;
+                if (!$player || $player->getTeam()->getId() !== $team->getId()) {
+                    continue;
+                }
 
-                $pp = new PlayerPosition();
-                $pp->setComposition($composition);
-                $pp->setPlayer($player);
-                $em->persist($pp);
+                $slot = (new FormationSlot())
+                    ->setStrategy($strategy)
+                    ->setPlayer($player);
+                $strategy->getSlots()->add($slot);
+                $em->persist($slot);
             }
 
-            $pp->setPosX((float) $item['posX']);
-            $pp->setPosY((float) $item['posY']);
-            if (array_key_exists('instructions', $item)) {
-                $pp->setInstructions($item['instructions'] ?: null);
+            $slot
+                ->setSlotIndex($slotIndex++)
+                ->setPosX((float) $item['posX'])
+                ->setPosY((float) $item['posY'])
+                ->setLabel($slot->getPlayer()?->getLastName() ?: 'Joueur')
+                ->setPositionCode($slot->getPlayer()?->getPosition() ?: 'CM')
+                ->setIndividualInstructions($item['instructions'] ?: null);
+        }
+
+        foreach ($existingByPlayerId as $playerId => $slot) {
+            if (!in_array($playerId, $receivedPlayerIds, true)) {
+                $em->remove($slot);
             }
         }
 
-        // Remove players no longer on pitch
-        foreach ($existingByPlayerId as $playerId => $pp) {
-            if (!in_array($playerId, $receivedPlayerIds)) {
-                $em->remove($pp);
-            }
-        }
-
-        $composition->touch();
+        $strategy->touch();
         $em->flush();
 
-        return $this->json(['success' => true]);
+        return $this->json([
+            'success' => true,
+            'redirect' => $this->generateUrl('app_strategy_edit', [
+                'teamId' => $team->getId(),
+                'id' => $strategy->getId(),
+            ]),
+        ]);
+    }
+
+    private function resolveWorkspaceStrategy(
+        Team $team,
+        EntityManagerInterface $em,
+        TacticalStrategyRepository $strategyRepository,
+    ): TacticalStrategy {
+        $strategy = $strategyRepository->findDefaultForTeam($team);
+        if ($strategy instanceof TacticalStrategy) {
+            return $strategy;
+        }
+
+        $teamStrategies = $strategyRepository->findByTeam($team);
+        if ($teamStrategies !== []) {
+            return $teamStrategies[0];
+        }
+
+        $composition = $team->getComposition();
+        $strategy = (new TacticalStrategy())
+            ->setTeam($team)
+            ->setMode(TacticalStrategy::MODE_FREE)
+            ->setName($composition instanceof Composition ? $composition->getName() : 'Tactique principale')
+            ->setIsDefault(true);
+
+        if ($composition instanceof Composition) {
+            $slotIndex = 1;
+            foreach ($composition->getPlayerPositions() as $playerPosition) {
+                $player = $playerPosition->getPlayer();
+                if (!$player) {
+                    continue;
+                }
+
+                $slot = (new FormationSlot())
+                    ->setStrategy($strategy)
+                    ->setSlotIndex($slotIndex++)
+                    ->setPlayer($player)
+                    ->setLabel((string) $player->getLastName())
+                    ->setPositionCode((string) $player->getPosition())
+                    ->setPosX($playerPosition->getPosX())
+                    ->setPosY($playerPosition->getPosY())
+                    ->setIndividualInstructions($playerPosition->getInstructions());
+                $strategy->getSlots()->add($slot);
+                $em->persist($slot);
+            }
+        }
+
+        $em->persist($strategy);
+        $em->flush();
+
+        return $strategy;
     }
 }

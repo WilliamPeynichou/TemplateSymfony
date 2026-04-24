@@ -555,6 +555,157 @@ textarea.tactical-input { resize: vertical; }
   letter-spacing: 0.04em; text-transform: uppercase;
 }
 
+/* Attendance Sheet */
+.attendance-sheet {
+  max-width: none;
+  width: 100%;
+}
+.attendance-sheet__topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+.attendance-sheet__bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.attendance-sheet__summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: var(--space-md);
+}
+.attendance-sheet__filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+.attendance-sheet__filter-btn {
+  border: 1px solid var(--outline-variant);
+  background: transparent;
+  color: var(--on-surface-variant);
+  border-radius: var(--radius-full);
+  padding: 0.5rem 0.95rem;
+  font-size: var(--text-label-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 180ms, background 180ms, color 180ms;
+}
+.attendance-sheet__filter-btn:hover {
+  border-color: var(--primary);
+  color: var(--on-surface);
+}
+.attendance-sheet__filter-btn--active {
+  background: var(--primary-container);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.attendance-sheet__summary-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+}
+.attendance-sheet__summary-card--present {
+  border-color: rgba(199, 243, 0, 0.28);
+}
+.attendance-sheet__summary-card--late {
+  border-color: rgba(182, 204, 189, 0.28);
+}
+.attendance-sheet__summary-card--absent,
+.attendance-sheet__summary-card--excused {
+  border-color: rgba(255, 180, 171, 0.22);
+}
+.attendance-sheet__summary-label {
+  display: block;
+  font-size: var(--text-label-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  margin-bottom: 0.4rem;
+}
+.attendance-sheet__summary-value {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.attendance-sheet__player-name {
+  display: block;
+  font-weight: 600;
+}
+.attendance-sheet__player-meta,
+.attendance-sheet__availability-note,
+.attendance-sheet__reason-placeholder {
+  color: var(--on-surface-variant);
+  font-size: var(--text-label-sm);
+}
+.attendance-sheet__availability-note {
+  margin-top: 0.35rem;
+  max-width: 28ch;
+}
+.attendance-sheet__status-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-width: 320px;
+}
+.attendance-sheet__status-btn {
+  border: 1px solid var(--outline-variant);
+  background: transparent;
+  color: var(--on-surface-variant);
+  border-radius: var(--radius-full);
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 180ms, background 180ms, color 180ms, box-shadow 180ms;
+}
+.attendance-sheet__status-btn:hover {
+  border-color: var(--primary);
+  color: var(--on-surface);
+}
+.attendance-sheet__status-btn--active {
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+  border-color: var(--secondary-container);
+  box-shadow: 0 0 16px rgba(199, 243, 0, 0.18);
+}
+.attendance-sheet__reason {
+  min-width: 220px;
+}
+.attendance-sheet__table .tactical-table td {
+  vertical-align: top;
+}
+
+@media (max-width: 1100px) {
+  .attendance-sheet__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .attendance-sheet__topbar {
+    flex-direction: column;
+  }
+
+  .attendance-sheet__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-sheet__status-group {
+    min-width: 0;
+  }
+}
+
 /* Match Timeline */
 .tactical-timeline { position: relative; padding: var(--space-md) 0; }
 .tactical-timeline::before {

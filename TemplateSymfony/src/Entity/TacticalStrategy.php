@@ -16,6 +16,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'tactical_strategy')]
 class TacticalStrategy
 {
+    public const MODE_FREE      = 'free';
+    public const MODE_FORMATION = 'formation';
+
     public const MENTALITIES = [
         'Très défensive' => 'very_defensive',
         'Défensive'      => 'defensive',
@@ -77,8 +80,14 @@ class TacticalStrategy
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Team $team = null;
 
+    #[ORM\Column(length: 20)]
+    private string $mode = self::MODE_FORMATION;
+
+    #[ORM\Column]
+    private ?int $legacyPlanId = null;
+
     #[ORM\Column(length: 150)]
-    private string $name = 'Nouvelle stratégie';
+    private string $name = 'Nouveau plan';
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
@@ -144,6 +153,21 @@ class TacticalStrategy
     }
 
     public function getId(): ?int { return $this->id; }
+
+    public function getMode(): string { return $this->mode; }
+    public function setMode(string $mode): static
+    {
+        if (!\in_array($mode, [self::MODE_FREE, self::MODE_FORMATION], true)) {
+            throw new \InvalidArgumentException('Mode invalide.');
+        }
+        $this->mode = $mode;
+        return $this;
+    }
+    public function isFree(): bool { return $this->mode === self::MODE_FREE; }
+    public function isFormation(): bool { return $this->mode === self::MODE_FORMATION; }
+
+    public function getLegacyPlanId(): ?int { return $this->legacyPlanId; }
+    public function setLegacyPlanId(?int $id): static { $this->legacyPlanId = $id; return $this; }
 
     public function getTeam(): ?Team { return $this->team; }
     public function setTeam(?Team $team): static { $this->team = $team; return $this; }

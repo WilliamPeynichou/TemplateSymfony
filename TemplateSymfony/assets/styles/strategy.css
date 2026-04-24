@@ -261,11 +261,16 @@
   aspect-ratio: 68 / 105;
   max-width: 520px;
   margin: 0 auto;
+  background: #101415;
+  border: 1px solid var(--outline-variant);
+  border-radius: 2px;
+  overflow: hidden;
 }
 .fm-pitch-svg {
   width: 100%; height: 100%; display: block;
-  border-radius: var(--radius);
+  border-radius: 0;
   box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  shape-rendering: geometricPrecision;
 }
 .fm-pitch-slots { position: absolute; inset: 0; }
 .fm-pitch-slot {
@@ -342,6 +347,177 @@
 }
 .fm-inspector-empty__hint { margin-top: var(--space-sm); font-size: 11px; }
 
+.fm-roster {
+  display: grid;
+  gap: var(--space-sm);
+}
+.fm-roster--full {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto 1fr;
+}
+.fm-roster__head {
+  display: grid;
+  gap: 4px;
+}
+.fm-roster__head strong {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--secondary-container);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+}
+.fm-roster__head span {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+.fm-roster__filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.fm-roster__filter {
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 150ms, color 150ms, background 150ms;
+}
+.fm-roster__filter:hover,
+.fm-roster__filter--active {
+  border-color: var(--secondary-container);
+  color: var(--secondary-container);
+  background: rgba(199,243,0,0.08);
+}
+.fm-roster__list {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  align-content: start;
+}
+.fm-selected-player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-container-low);
+}
+.fm-selected-player__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fm-selected-player__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--secondary-container);
+  font-size: 12px;
+}
+.fm-selected-player__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+.fm-selected-player__empty {
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+.fm-selected-player__badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  background: rgba(255,255,255,0.03);
+}
+.fm-selected-player__badge--gk { border-color: #ffcc00; color: #ffcc00; }
+.fm-selected-player__badge--def { border-color: #6ab6ff; color: #6ab6ff; }
+.fm-selected-player__badge--mid { border-color: var(--secondary-container); color: var(--secondary-container); }
+.fm-selected-player__badge--att { border-color: #ff6b6b; color: #ff6b6b; }
+.fm-roster__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-container-low);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms, transform 150ms;
+}
+.fm-roster__item:hover {
+  border-color: var(--secondary-container);
+  transform: translateY(-1px);
+}
+.fm-roster__item--active {
+  border-color: var(--secondary-container);
+  background: rgba(199,243,0,0.08);
+}
+.fm-roster__item--dragging {
+  opacity: 0.55;
+}
+.fm-roster__item--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.fm-roster__item--disabled:hover {
+  transform: none;
+  border-color: var(--outline-variant);
+}
+.fm-roster__main,
+.fm-roster__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fm-roster__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--secondary-container);
+  font-size: 12px;
+}
+.fm-roster__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+.fm-roster__badge,
+.fm-roster__status {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  background: rgba(255,255,255,0.03);
+}
+.fm-roster__badge--gk { border-color: #ffcc00; color: #ffcc00; }
+.fm-roster__badge--def { border-color: #6ab6ff; color: #6ab6ff; }
+.fm-roster__badge--mid { border-color: var(--secondary-container); color: var(--secondary-container); }
+.fm-roster__badge--att { border-color: #ff6b6b; color: #ff6b6b; }
+.fm-roster__empty {
+  font-size: 13px;
+  color: var(--on-surface-variant);
+  margin: 0;
+}
+
 .fm-suggestion[hidden] { display: none; }
 .fm-suggestion {
   margin-top: 6px;
@@ -361,3 +537,53 @@
   border-radius: var(--radius);
   cursor: pointer;
 }
+
+/* ── Fusion Plan/Strategy : nouveaux éléments ──────────────────── */
+
+/* Double bloc de création (libre + formation) */
+.fm-new-plans-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+@media (max-width: 900px) { .fm-new-plans-row { grid-template-columns: 1fr; } }
+
+.fm-new-plan-block {
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+.fm-new-plan-block--formation { border-color: rgba(199,243,0,0.2); }
+.fm-new-plan-block__head { margin-bottom: var(--space-sm); }
+.fm-new-plan-block__head strong { display: block; color: var(--on-surface); font-size: 0.9rem; margin-bottom: 0.25rem; }
+.fm-new-plan-block__head span { color: var(--on-surface-variant); font-size: 0.8rem; }
+.fm-new-plan-block__form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.fm-new-plan-block__body { display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* Plan libre : miniature terrain (positions libres sans grille formation) */
+.fm-strategy-card__pitch--free {
+  position: relative;
+  aspect-ratio: 68 / 105;
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-height: 220px;
+  margin: 0 auto;
+  width: 140px;
+}
+.fm-strategy-card__pitch--free .fm-strategy-card__pitch-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(199,243,0,0.03) 0%, transparent 50%, rgba(199,243,0,0.03) 100%);
+}
+
+/* Flash message */
+.fm-flash { padding: 0.75rem var(--space-md); border-radius: var(--radius); margin-bottom: var(--space-sm); font-size: 0.875rem; }
+.fm-flash--success { background: rgba(199,243,0,0.1); border: 1px solid rgba(199,243,0,0.3); color: var(--secondary-container); }
+
+/* Slots draggables en mode libre */
+.fm-pitch-slots--free .fm-pitch-slot { cursor: grab; }
+.fm-pitch-slots--free .fm-pitch-slot:active { cursor: grabbing; }
+.fm-pitch-slot--dragging { opacity: 0.5; }

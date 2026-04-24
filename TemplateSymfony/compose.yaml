@@ -10,6 +10,7 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD:-Andfield}@database:3306/${MYSQL_DATABASE:-bddAndfield}?serverVersion=8.0&charset=utf8mb4
       AGENT_SECRET: ${AGENT_SECRET:?AGENT_SECRET is required}
       AGENT_INTERNAL_SECRET: ${AGENT_INTERNAL_SECRET:?AGENT_INTERNAL_SECRET is required}
+      MAILER_DSN: smtp://mailpit:1025
     volumes:
       - ./:/app
       - caddy_data:/data
@@ -20,6 +21,7 @@ services:
       - "443:443/udp"
     depends_on:
       - database
+      - mailpit
 
 ###> doctrine/doctrine-bundle ###
   database:

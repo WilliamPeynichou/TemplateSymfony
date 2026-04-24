@@ -130,7 +130,10 @@ class CalendarController extends AbstractController
             $this->saveTrainingAttendances($team, $session, $request, $em, $attendances);
             $this->addFlash('success', 'Présences de la séance enregistrées.');
 
-            return $this->redirectToRoute('app_team_calendar', ['id' => $team->getId()]);
+            return $this->redirectToRoute('app_training_attendance', [
+                'id' => $team->getId(),
+                'sessionId' => $session->getId(),
+            ]);
         }
 
         return $this->renderAttendanceForm(
@@ -165,7 +168,10 @@ class CalendarController extends AbstractController
             $this->saveFixtureAttendances($team, $fixture, $request, $em, $attendances);
             $this->addFlash('success', 'Présences du match enregistrées.');
 
-            return $this->redirectToRoute('app_team_calendar', ['id' => $team->getId()]);
+            return $this->redirectToRoute('app_fixture_attendance', [
+                'id' => $team->getId(),
+                'fixtureId' => $fixture->getId(),
+            ]);
         }
 
         return $this->renderAttendanceForm(
@@ -222,6 +228,7 @@ class CalendarController extends AbstractController
             'attendanceMap' => $attendanceMap,
             'statuses' => Attendance::STATUSES,
             'csrfTokenId' => $csrfTokenId,
+            'totals' => $this->buildAttendanceSheetTotals($players, $attendanceMap),
         ]);
     }
 
@@ -310,6 +317,32 @@ class CalendarController extends AbstractController
 
         if ($totals['total'] > 0) {
             $totals['rate'] = (int) round(($totals['present'] / $totals['total']) * 100);
+        }
+
+        return $totals;
+    }
+
+    /**
+     * @param Player[] $players
+     * @param array<int, Attendance> $attendanceMap
+     *
+     * @return array{players:int,present:int,absent:int,excused:int,late:int}
+     */
+    private function buildAttendanceSheetTotals(array $players, array $attendanceMap): array
+    {
+        $totals = [
+            'players' => \count($players),
+            'present' => 0,
+            'absent' => 0,
+            'excused' => 0,
+            'late' => 0,
+        ];
+
+        foreach ($players as $player) {
+            $status = $attendanceMap[$player->getId() ?? 0]?->getStatus() ?? Attendance::STATUS_PRESENT;
+            if (isset($totals[$status])) {
+                ++$totals[$status];
+            }
         }
 
         return $totals;

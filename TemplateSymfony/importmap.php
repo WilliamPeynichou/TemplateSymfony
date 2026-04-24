@@ -24,10 +24,6 @@ return [
         'path' => './assets/composition.js',
         'entrypoint' => true,
     ],
-    'plan' => [
-        'path' => './assets/plan.js',
-        'entrypoint' => true,
-    ],
     'match' => [
         'path' => './assets/match.js',
         'entrypoint' => true,
@@ -38,6 +34,10 @@ return [
     ],
     'strategy' => [
         'path' => './assets/strategy.js',
+        'entrypoint' => true,
+    ],
+    'callup' => [
+        'path' => './assets/callup.js',
         'entrypoint' => true,
     ],
     'agent-chat' => [
