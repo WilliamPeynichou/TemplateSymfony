@@ -16,8 +16,7 @@
         </script>
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
-            {{ importmap('app') }}
-            {{ importmap('agent-chat') }}
+            {{ importmap(['app', 'agent-chat']) }}
         {% endblock %}
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
         {% if frankenphpHotReload %}
@@ -26,7 +25,11 @@
             <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
         {% endif %}
     </head>
-    {% set _teamId = app.request.attributes.get('teamId') ?? app.request.attributes.get('id') ?? (app.user.teams|first ? app.user.teams|first.id : '') %}
+        {% set _route = app.request.attributes.get('_route') %}
+        {% set _idIsTeam = _route starts with 'app_team_' or _route starts with 'app_training_' or _route starts with 'app_fixture_' or _route starts with 'app_composition_' %}
+        {% set _teamRouteId = _idIsTeam ? app.request.attributes.get('id') : null %}
+        {% set _fallbackTeam = app.user.teams|first %}
+        {% set _teamId = app.request.attributes.get('teamId') ?: (_teamRouteId ?: (app.request.query.get('team_id') ?: (_fallbackTeam ? _fallbackTeam.id : ''))) %}
     <body data-team-id="{{ _teamId }}">
         <div class="tactical-shell">
             <aside class="tactical-sidebar">
@@ -45,10 +48,10 @@
                     </a>
                     {% set teamId = _teamId %}
                     <span class="tactical-sidebar__section-label" style="margin-top:1rem;">Équipe</span>
-                    <a href="{{ teamId ? path('app_composition_index', {id: teamId}) : path('app_team_index') }}"
-                       class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_composition' or app.request.attributes.get('_route') starts with 'app_strategy' %}tactical-sidebar__link--active{% endif %}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 4.9 18.7M2.1 9h19.8M2.1 15h19.8M12 2C9.3 7 8 12 8 12s1.3 5 4 10M12 2c2.7 5 4 10 4 10s-1.3 5-4 10"/></svg>
-                        Compo & tactiques
+                    <a href="{{ path('app_my_strategies') }}"
+                       class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_my_strategies' or app.request.attributes.get('_route') starts with 'app_strategy' or app.request.attributes.get('_route') starts with 'app_composition' %}tactical-sidebar__link--active{% endif %}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                        Mes tactiques
                     </a>
                     <a href="{{ teamId ? path('app_player_index', {teamId: teamId}) : path('app_team_index') }}"
                        class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_player' %}tactical-sidebar__link--active{% endif %}">
@@ -65,6 +68,11 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
                         Présences
                     </a>
+                    <a href="{{ teamId ? path('app_team_material', {id: teamId}) : path('app_team_index') }}"
+                       class="tactical-sidebar__link {% if app.request.attributes.get('_route') starts with 'app_team_material' %}tactical-sidebar__link--active{% endif %}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        Matériel
+                    </a>
                 </nav>
                 <div class="tactical-sidebar__footer">
                     <div class="tactical-sidebar__user">
@@ -79,6 +87,20 @@
             </aside>
 
             <main class="tactical-main">
+                <details class="tactical-mobile-nav">
+                    <summary class="tactical-mobile-nav__summary">
+                        <span>And<span>field</span></span>
+                        <strong>Menu</strong>
+                    </summary>
+                    <nav class="tactical-mobile-nav__links" aria-label="Navigation mobile coach">
+                        <a href="{{ path('app_team_index') }}">Équipes</a>
+                        <a href="{{ teamId ? path('app_team_dashboard', {id: teamId}) : path('app_team_index') }}">Dashboard</a>
+                        <a href="{{ teamId ? path('app_player_index', {teamId: teamId}) : path('app_team_index') }}">Effectif</a>
+                        <a href="{{ teamId ? path('app_team_calendar', {id: teamId}) : path('app_team_index') }}">Calendrier</a>
+                        <a href="{{ teamId ? path('app_team_attendance_summary', {id: teamId}) : path('app_team_index') }}">Stats</a>
+                    </nav>
+                </details>
+
                 {% if app.flashes|length > 0 %}
                     <div class="tactical-flash-wrap">
                         {% for type, messages in app.flashes %}

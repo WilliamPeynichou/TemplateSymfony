@@ -39,7 +39,6 @@ class StrategyController extends AbstractController
             'team'       => $team,
             'strategies' => $strategyRepo->findByTeam($team),
             'usage'      => $strategyRepo->getFormationUsageStats($team),
-            'formations' => FormationLibrary::all(),
         ]);
     }
 
@@ -55,10 +54,10 @@ class StrategyController extends AbstractController
 
         $name         = trim((string) $request->request->get('name', ''));
         $formationKey = (string) $request->request->get('formation', '4-3-3');
-        $mode         = $request->request->get('mode', TacticalStrategy::MODE_FORMATION);
+        $mode         = $request->request->get('mode', TacticalStrategy::MODE_FREE);
 
         if (!\in_array($mode, [TacticalStrategy::MODE_FREE, TacticalStrategy::MODE_FORMATION], true)) {
-            $mode = TacticalStrategy::MODE_FORMATION;
+            $mode = TacticalStrategy::MODE_FREE;
         }
 
         if ($name === '') {

@@ -121,6 +121,51 @@ class AttendanceRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return Attendance[]
+     */
+    public function findRecentForPlayer(Player $player, int $limit = 50): array
+    {
+        $qb = $this->createQueryBuilder('a')
+            ->andWhere('a.player = :player')
+            ->setParameter('player', $player)
+            ->leftJoin('a.fixture', 'f')
+            ->leftJoin('a.trainingSession', 'ts')
+            ->addSelect('f', 'ts')
+            ->addSelect('(CASE WHEN f.matchDate IS NOT NULL THEN f.matchDate ELSE ts.startsAt END) AS HIDDEN eventDate')
+            ->orderBy('eventDate', 'DESC')
+            ->addOrderBy('a.id', 'DESC')
+            ->setMaxResults($limit);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return array<int, array{
+     *     type:string,
+     *     event: Fixture|TrainingSession,
+     *     title:string,
+     *     date:\DateTimeImmutable,
+     *     savedAt:\DateTimeImmutable,
+     *     entered:int,
+     *     present:int,
+     *     absent:int,
+     *     excused:int,
+     *     late:int
+     * }>
+     */
+    public function findSavedSheetsForTeam(Team $team): array
+    {
+        $sheets = [
+            ...$this->findSavedFixtureSheetsForTeam($team),
+            ...$this->findSavedTrainingSheetsForTeam($team),
+        ];
+
+        usort($sheets, fn (array $left, array $right): int => $right['savedAt'] <=> $left['savedAt']);
+
+        return $sheets;
+    }
+
+    /**
      * @param Attendance[] $attendances
      *
      * @return array<int, Attendance>
@@ -136,6 +181,149 @@ class AttendanceRepository extends ServiceEntityRepository
         }
 
         return $indexed;
+    }
+
+    /**
+     * @return array<int, array{
+     *     type:string,
+     *     event: Fixture,
+     *     title:string,
+     *     date:\DateTimeImmutable,
+     *     savedAt:\DateTimeImmutable,
+     *     entered:int,
+     *     present:int,
+     *     absent:int,
+     *     excused:int,
+     *     late:int
+     * }>
+     */
+    private function findSavedFixtureSheetsForTeam(Team $team): array
+    {
+        $rows = $this->getEntityManager()->createQueryBuilder()
+            ->select('f AS event')
+            ->addSelect('COUNT(a.id) AS entered')
+            ->addSelect('SUM(CASE WHEN a.status = :present OR a.status = :late THEN 1 ELSE 0 END) AS present')
+            ->addSelect('SUM(CASE WHEN a.status = :absent THEN 1 ELSE 0 END) AS absent')
+            ->addSelect('SUM(CASE WHEN a.status = :excused THEN 1 ELSE 0 END) AS excused')
+            ->addSelect('SUM(CASE WHEN a.status = :late THEN 1 ELSE 0 END) AS late')
+            ->addSelect('MAX(a.updatedAt) AS savedAt')
+            ->from(Fixture::class, 'f')
+            ->join(Attendance::class, 'a', 'WITH', 'a.fixture = f')
+            ->join('a.player', 'p')
+            ->andWhere('p.team = :team')
+            ->setParameter('team', $team)
+            ->setParameter('present', Attendance::STATUS_PRESENT)
+            ->setParameter('absent', Attendance::STATUS_ABSENT)
+            ->setParameter('excused', Attendance::STATUS_EXCUSED)
+            ->setParameter('late', Attendance::STATUS_LATE)
+            ->groupBy('f.id')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(function (array $row): array {
+            /** @var Fixture $fixture */
+            $fixture = $row['event'];
+
+            return $this->normalizeSavedSheetRow(
+                'Match',
+                $fixture,
+                'vs '.$fixture->getOpponent(),
+                $fixture->getMatchDate(),
+                $row,
+            );
+        }, $rows);
+    }
+
+    /**
+     * @return array<int, array{
+     *     type:string,
+     *     event: TrainingSession,
+     *     title:string,
+     *     date:\DateTimeImmutable,
+     *     savedAt:\DateTimeImmutable,
+     *     entered:int,
+     *     present:int,
+     *     absent:int,
+     *     excused:int,
+     *     late:int
+     * }>
+     */
+    private function findSavedTrainingSheetsForTeam(Team $team): array
+    {
+        $rows = $this->getEntityManager()->createQueryBuilder()
+            ->select('ts AS event')
+            ->addSelect('COUNT(a.id) AS entered')
+            ->addSelect('SUM(CASE WHEN a.status = :present OR a.status = :late THEN 1 ELSE 0 END) AS present')
+            ->addSelect('SUM(CASE WHEN a.status = :absent THEN 1 ELSE 0 END) AS absent')
+            ->addSelect('SUM(CASE WHEN a.status = :excused THEN 1 ELSE 0 END) AS excused')
+            ->addSelect('SUM(CASE WHEN a.status = :late THEN 1 ELSE 0 END) AS late')
+            ->addSelect('MAX(a.updatedAt) AS savedAt')
+            ->from(TrainingSession::class, 'ts')
+            ->join(Attendance::class, 'a', 'WITH', 'a.trainingSession = ts')
+            ->join('a.player', 'p')
+            ->andWhere('p.team = :team')
+            ->setParameter('team', $team)
+            ->setParameter('present', Attendance::STATUS_PRESENT)
+            ->setParameter('absent', Attendance::STATUS_ABSENT)
+            ->setParameter('excused', Attendance::STATUS_EXCUSED)
+            ->setParameter('late', Attendance::STATUS_LATE)
+            ->groupBy('ts.id')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(function (array $row): array {
+            /** @var TrainingSession $training */
+            $training = $row['event'];
+
+            return $this->normalizeSavedSheetRow(
+                'Entraînement',
+                $training,
+                $training->getTitle(),
+                $training->getStartsAt(),
+                $row,
+            );
+        }, $rows);
+    }
+
+    /**
+     * @param array{entered:mixed,present:mixed,absent:mixed,excused:mixed,late:mixed,savedAt:mixed} $row
+     *
+     * @return array{
+     *     type:string,
+     *     event: Fixture|TrainingSession,
+     *     title:string,
+     *     date:\DateTimeImmutable,
+     *     savedAt:\DateTimeImmutable,
+     *     entered:int,
+     *     present:int,
+     *     absent:int,
+     *     excused:int,
+     *     late:int
+     * }
+     */
+    private function normalizeSavedSheetRow(
+        string $type,
+        Fixture|TrainingSession $event,
+        string $title,
+        \DateTimeImmutable $date,
+        array $row,
+    ): array {
+        $savedAt = $row['savedAt'] instanceof \DateTimeInterface
+            ? \DateTimeImmutable::createFromInterface($row['savedAt'])
+            : new \DateTimeImmutable((string) $row['savedAt']);
+
+        return [
+            'type' => $type,
+            'event' => $event,
+            'title' => $title,
+            'date' => $date,
+            'savedAt' => $savedAt,
+            'entered' => (int) $row['entered'],
+            'present' => (int) $row['present'],
+            'absent' => (int) $row['absent'],
+            'excused' => (int) $row['excused'],
+            'late' => (int) $row['late'],
+        ];
     }
 
     private function applyPeriodFilter(

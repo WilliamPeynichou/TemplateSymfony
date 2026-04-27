@@ -7,7 +7,7 @@
         <h1 class="tactical-page-header__title">Modifier <em>{{ player.fullName }}</em></h1>
         <p class="tactical-page-header__sub">{{ team.name }}</p>
     </div>
-    <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">← Retour</a>
+    <a href="{{ path('app_player_show', {teamId: team.id, id: player.id}) }}" class="tactical-btn tactical-btn--outline">← Fiche</a>
 </div>
 <div class="tactical-page-body">
     <div class="tactical-form-card" style="max-width:760px;">
@@ -34,6 +34,11 @@
                     <label class="tactical-form-label">{{ form_label(form.position) }}</label>
                     {{ form_widget(form.position, {attr: {class: 'tactical-input'}}) }}
                 </div>
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label">{{ form_label(form.licenseNumber) }}</label>
+                {{ form_widget(form.licenseNumber, {attr: {class: 'tactical-input'}}) }}
+                <div class="tactical-form-error">{{ form_errors(form.licenseNumber) }}</div>
             </div>
             <div class="tactical-form-row">
                 <div class="tactical-form-group">
@@ -98,7 +103,7 @@
             </div>
             <div class="tactical-form-actions">
                 <button class="tactical-btn tactical-btn--primary" type="submit">Enregistrer</button>
-                <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">Annuler</a>
+                <a href="{{ path('app_player_show', {teamId: team.id, id: player.id}) }}" class="tactical-btn tactical-btn--outline">Annuler</a>
             </div>
         {{ form_end(form) }}
     </div>
@@ -129,6 +134,16 @@
                 </table>
             </div>
         {% endif %}
+    </div>
+
+    <div class="tactical-form-card danger-zone">
+        <h2 class="tactical-card__title">Zone sensible</h2>
+        <p class="tactical-card__sub">La suppression d'un joueur est séparée de la modification pour éviter les erreurs de manipulation.</p>
+        <form method="post" action="{{ path('app_player_delete', {teamId: team.id, id: player.id}) }}"
+              onsubmit="return confirm('Supprimer définitivement {{ player.fullName }} ?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_player_' ~ player.id) }}">
+            <button type="submit" class="tactical-btn tactical-btn--danger">Supprimer le joueur</button>
+        </form>
     </div>
 </div>
 {% endblock %}

@@ -1,0 +1,275 @@
+/* ─── Calendrier mensuel — server-rendered ─── */
+
+/* Stats rapides */
+.cal-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+.cal-stat {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.5rem;
+    padding: 0.875rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.cal-stat__value {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--on-surface);
+    line-height: 1;
+}
+.cal-stat__value--lime {
+    color: #c7f300;
+}
+.cal-stat__label {
+    font-size: 0.75rem;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Toolbar */
+.cal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.75rem 0.75rem 0 0;
+    border-bottom: none;
+}
+.cal-toolbar__nav {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+.cal-toolbar__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--on-surface);
+    letter-spacing: -0.01em;
+}
+.cal-toolbar__legend {
+    display: inline-flex;
+    gap: 0.875rem;
+}
+
+.cal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    background: transparent;
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.375rem;
+    color: var(--on-surface);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background 0.12s, border-color 0.12s;
+}
+.cal-btn:hover {
+    background: var(--surface-container-high);
+    border-color: var(--outline);
+}
+.cal-btn--today {
+    font-weight: 600;
+}
+
+.cal-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    color: var(--on-surface-variant);
+}
+.cal-legend__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.cal-legend--match .cal-legend__dot    { background: #c7f300; }
+.cal-legend--training .cal-legend__dot { background: var(--primary); }
+
+/* Grille mensuelle */
+.cal-grid {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0 0 0.75rem 0.75rem;
+    overflow: hidden;
+}
+
+.cal-grid__head {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--surface-container);
+    border-bottom: 1px solid var(--outline-variant);
+}
+.cal-grid__head-cell {
+    padding: 0.625rem 0.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.cal-grid__head-cell + .cal-grid__head-cell {
+    border-left: 1px solid var(--outline-variant);
+}
+
+.cal-grid__row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-top: 1px solid var(--outline-variant);
+}
+.cal-grid__row:first-of-type {
+    border-top: none;
+}
+
+/* Jour */
+.cal-day {
+    min-height: 7rem;
+    padding: 0.4rem 0.5rem;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    overflow: hidden;
+}
+.cal-day + .cal-day {
+    border-left: 1px solid var(--outline-variant);
+}
+
+.cal-day--off {
+    background: var(--surface-container-lowest);
+}
+.cal-day--off .cal-day__num {
+    color: var(--outline);
+    opacity: 0.5;
+}
+
+.cal-day__num {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--on-surface-variant);
+    align-self: flex-end;
+    padding: 0.125rem 0.375rem;
+    line-height: 1;
+}
+
+.cal-day--today .cal-day__num {
+    background: #c7f300;
+    color: #101415;
+    border-radius: 999px;
+    min-width: 1.625rem;
+    height: 1.625rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    padding: 0;
+}
+
+.cal-day__events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.125rem;
+}
+
+/* Events */
+.cal-event {
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+.cal-event__main {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.4rem;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.12s;
+}
+.cal-event__main:hover {
+    opacity: 0.85;
+}
+.cal-event__time {
+    font-weight: 600;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+.cal-event__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cal-event--match {
+    background: #c7f300;
+    color: #101415;
+}
+.cal-event--training {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+/* Badge tactique sur les matchs */
+.cal-event__tactic {
+    display: block;
+    padding: 0.15rem 0.4rem;
+    background: rgba(16, 20, 21, 0.18);
+    color: #101415;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-top: 1px solid rgba(16, 20, 21, 0.18);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background 0.12s;
+}
+.cal-event__tactic:hover {
+    background: rgba(16, 20, 21, 0.32);
+}
+
+/* Responsive */
+@media (max-width: 760px) {
+    .cal-day {
+        min-height: 5rem;
+        padding: 0.25rem 0.3rem;
+    }
+    .cal-event__time {
+        display: none;
+    }
+    .cal-event {
+        font-size: 0.6875rem;
+    }
+    .cal-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .cal-toolbar__nav {
+        justify-content: center;
+    }
+    .cal-toolbar__legend {
+        justify-content: center;
+    }
+}

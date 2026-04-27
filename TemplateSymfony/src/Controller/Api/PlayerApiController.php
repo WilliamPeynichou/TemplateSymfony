@@ -59,6 +59,7 @@ class PlayerApiController extends ApiController
         $player->setFirstName($data['firstName']);
         $player->setLastName($data['lastName']);
         $player->setNumber((int) $data['number']);
+        $player->setLicenseNumber(isset($data['licenseNumber']) && $data['licenseNumber'] !== '' ? (string) $data['licenseNumber'] : null);
         $player->setPosition($data['position']);
         $player->setStrongFoot($data['strongFoot'] ?? null);
         $player->setHeight(isset($data['height']) ? (int) $data['height'] : null);
@@ -87,6 +88,9 @@ class PlayerApiController extends ApiController
         if (isset($data['firstName']))  $player->setFirstName($data['firstName']);
         if (isset($data['lastName']))   $player->setLastName($data['lastName']);
         if (isset($data['number']))     $player->setNumber((int) $data['number']);
+        if (array_key_exists('licenseNumber', $data)) {
+            $player->setLicenseNumber($data['licenseNumber'] ? (string) $data['licenseNumber'] : null);
+        }
         if (isset($data['position']))   $player->setPosition($data['position']);
         if (array_key_exists('strongFoot', $data)) $player->setStrongFoot($data['strongFoot']);
         if (array_key_exists('height', $data))     $player->setHeight($data['height'] ? (int) $data['height'] : null);
@@ -120,8 +124,9 @@ class PlayerApiController extends ApiController
             'firstName'  => $p->getFirstName(),
             'lastName'   => $p->getLastName(),
             'fullName'   => $p->getFullName(),
-            'number'     => $p->getNumber(),
-            'position'   => $p->getPosition(),
+            'number'         => $p->getNumber(),
+            'licenseNumber'  => $p->getLicenseNumber(),
+            'position'       => $p->getPosition(),
             'strongFoot' => $p->getStrongFoot(),
             'height'     => $p->getHeight(),
             'weight'     => $p->getWeight(),

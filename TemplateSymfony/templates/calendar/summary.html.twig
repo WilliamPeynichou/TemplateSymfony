@@ -1,136 +1,250 @@
 {% extends 'layout/app.html.twig' %}
 {% block title %}Synthèse présences — {{ team.name }}{% endblock %}
 
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="tactical-page-header">
     <div>
         <h1 class="tactical-page-header__title">Synthèse <em>présences</em></h1>
-        <p class="tactical-page-header__sub">{{ team.name }}</p>
+        <p class="tactical-page-header__sub">
+            {{ team.name }}
+            <span class="attendance-summary__period-dot" aria-hidden="true">·</span>
+            <span class="attendance-summary__period-label">{{ periodLabel }}</span>
+        </p>
     </div>
-    <div style="display:flex;gap:0.75rem;">
+    <div class="attendance-summary__header-actions">
+        <a href="{{ path('app_team_dashboard', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Dashboard</a>
         <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Calendrier</a>
         <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">Effectif</a>
     </div>
 </div>
 
-<div class="tactical-page-body" style="display:grid;gap:var(--space-md);">
-    <div class="tactical-form-card">
-        <form method="get" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:end;">
-            <div class="tactical-form-group">
+<div class="tactical-page-body attendance-summary">
+    <div class="attendance-summary__toolbar tactical-form-card">
+        <div class="attendance-summary__presets" role="group" aria-label="Périodes courantes">
+            <span class="attendance-summary__presets-label">Période</span>
+            <div class="attendance-summary__chips">
+                <a href="{{ path('app_team_attendance_summary', {id: team.id, preset: '7'}) }}"
+                   class="attendance-summary__chip {{ filters.preset == '7' ? 'attendance-summary__chip--active' : '' }}">7 j.</a>
+                <a href="{{ path('app_team_attendance_summary', {id: team.id, preset: '30'}) }}"
+                   class="attendance-summary__chip {{ filters.preset == '30' ? 'attendance-summary__chip--active' : '' }}">30 j.</a>
+                <a href="{{ path('app_team_attendance_summary', {id: team.id, preset: '90'}) }}"
+                   class="attendance-summary__chip {{ filters.preset == '90' ? 'attendance-summary__chip--active' : '' }}">90 j.</a>
+                <a href="{{ path('app_team_attendance_summary', {id: team.id, preset: '365'}) }}"
+                   class="attendance-summary__chip {{ filters.preset == '365' ? 'attendance-summary__chip--active' : '' }}">12 mois</a>
+                <a href="{{ path('app_team_attendance_summary', {id: team.id, preset: 'all'}) }}"
+                   class="attendance-summary__chip {{ filters.preset == 'all' or (filters.from == '' and filters.to == '' and filters.preset == '') ? 'attendance-summary__chip--active' : '' }}">Tout</a>
+            </div>
+        </div>
+        <form method="get" class="attendance-summary__range-form">
+            <input type="hidden" name="preset" value="">
+            <div class="tactical-form-group attendance-summary__range-field">
                 <label class="tactical-form-label" for="from">Du</label>
                 <input id="from" type="date" name="from" value="{{ filters.from }}" class="tactical-input">
             </div>
-            <div class="tactical-form-group">
+            <div class="tactical-form-group attendance-summary__range-field">
                 <label class="tactical-form-label" for="to">Au</label>
                 <input id="to" type="date" name="to" value="{{ filters.to }}" class="tactical-input">
             </div>
-            <div class="tactical-form-actions" style="margin:0;">
-                <button type="submit" class="tactical-btn tactical-btn--primary">Filtrer</button>
+            <div class="attendance-summary__range-actions">
+                <button type="submit" class="tactical-btn tactical-btn--primary">Appliquer</button>
                 <a href="{{ path('app_team_attendance_summary', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Réinitialiser</a>
             </div>
         </form>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-md);">
-        <div class="tactical-card">
-            <div class="tactical-badge tactical-badge--lime">{{ totals.rate }}%</div>
-            <p class="tactical-card__sub" style="margin-top:0.75rem;">Taux global</p>
-        </div>
-        <div class="tactical-card">
-            <div class="tactical-badge">{{ totals.total }}</div>
-            <p class="tactical-card__sub" style="margin-top:0.75rem;">Pointages</p>
-        </div>
-        <div class="tactical-card">
-            <div class="tactical-badge">{{ totals.absent }}</div>
-            <p class="tactical-card__sub" style="margin-top:0.75rem;">Absences</p>
-        </div>
-        <div class="tactical-card">
-            <div class="tactical-badge">{{ totals.excused }}</div>
-            <p class="tactical-card__sub" style="margin-top:0.75rem;">Justifiées</p>
-        </div>
-    </div>
+    <div class="attendance-summary__layout">
+        <div class="attendance-summary__main">
+            <section class="team-dashboard__stats attendance-summary__stats" aria-label="Indicateurs de présence">
+                <article class="tactical-card team-dashboard__stat-card team-dashboard__stat-card--main">
+                    <span class="team-dashboard__stat-label">Taux global</span>
+                    <strong class="team-dashboard__stat-value">{{ totals.rate }}%</strong>
+                    <p class="tactical-card__sub">{{ totals.present }} présences sur {{ totals.total }} pointage{{ totals.total > 1 ? 's' : '' }}</p>
+                    {% if totals.total > 0 %}
+                        <div class="team-dashboard__progress-bar attendance-summary__rate-bar" aria-hidden="true">
+                            <span style="width:{{ min(totals.rate, 100) }}%;"></span>
+                        </div>
+                    {% endif %}
+                </article>
+                <article class="tactical-card team-dashboard__stat-card">
+                    <span class="team-dashboard__stat-label">Joueurs suivis</span>
+                    <strong class="team-dashboard__stat-value">{{ playersWithData }}<span class="attendance-summary__stat-den">/{{ playersCount }}</span></strong>
+                    <p class="tactical-card__sub">Avec au moins un pointage sur la période</p>
+                </article>
+                <article class="tactical-card team-dashboard__stat-card">
+                    <span class="team-dashboard__stat-label">Absences</span>
+                    <strong class="team-dashboard__stat-value">{{ totals.absent }}</strong>
+                    <p class="tactical-card__sub">{{ totals.excused }} justifiée{{ totals.excused > 1 ? 's' : '' }} · {{ totals.late }} retard{{ totals.late > 1 ? 's' : '' }}</p>
+                </article>
+                <article class="tactical-card team-dashboard__stat-card">
+                    <span class="team-dashboard__stat-label">Retards</span>
+                    <strong class="team-dashboard__stat-value">{{ totals.late }}</strong>
+                    <p class="tactical-card__sub">Comptés comme présence partielle</p>
+                </article>
+            </section>
 
-    <div class="tactical-card">
-        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Par joueur</div>
-        <div class="tactical-table-wrap">
-            <table class="tactical-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Joueur</th>
-                        <th>Présence</th>
-                        <th>Absences</th>
-                        <th>Justifiées</th>
-                        <th>Retards</th>
-                        <th>Taux</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for player in players %}
-                        {% set row = summary[player.id] ?? null %}
-                        <tr>
-                            <td><span class="tactical-badge tactical-badge--primary">{{ player.number }}</span></td>
-                            <td>
-                                <strong style="font-weight:600;">{{ player.fullName }}</strong>
-                                <div style="color:var(--on-surface-variant);font-size:var(--text-label-sm);">{{ player.position }}</div>
-                            </td>
-                            <td>{{ row ? row.present ~ '/' ~ row.total : '—' }}</td>
-                            <td>{{ row ? row.absent : '—' }}</td>
-                            <td>{{ row ? row.excused : '—' }}</td>
-                            <td>{{ row ? row.late : '—' }}</td>
-                            <td>
-                                {% if row %}
-                                    <span class="tactical-badge {{ row.rate >= 80 ? 'tactical-badge--lime' : '' }}">{{ row.rate }}%</span>
-                                {% else %}
-                                    —
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+            <section class="tactical-card attendance-summary__panel">
+                <div class="attendance-summary__panel-head">
+                    <h2 class="tactical-card__title">Par joueur</h2>
+                    <p class="tactical-card__sub">Tri par taux de présence (puis n° de maillot).</p>
+                </div>
+                {% if players is empty %}
+                    <p class="attendance-summary__empty">Aucun joueur dans l’effectif. <a href="{{ path('app_player_index', {teamId: team.id}) }}">Ajouter des joueurs</a></p>
+                {% else %}
+                    <div class="tactical-table-wrap attendance-summary__table-wrap">
+                        <table class="tactical-table attendance-summary__player-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Joueur</th>
+                                    <th scope="col">Présences</th>
+                                    <th scope="col">Abs.</th>
+                                    <th scope="col">Just.</th>
+                                    <th scope="col">Ret.</th>
+                                    <th scope="col">Taux</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for player in players %}
+                                    {% set row = summary[player.id] ?? null %}
+                                    <tr class="{{ row and row.total > 0 ? '' : 'attendance-summary__row--muted' }}">
+                                        <td><span class="tactical-badge tactical-badge--primary">{{ player.number }}</span></td>
+                                        <td>
+                                            <strong class="attendance-summary__player-name">{{ player.fullName }}</strong>
+                                            <div class="attendance-summary__player-pos">{{ player.position }}</div>
+                                        </td>
+                                        <td>{{ row ? row.present ~ ' / ' ~ row.total : '—' }}</td>
+                                        <td>{{ row ? row.absent : '—' }}</td>
+                                        <td>{{ row ? row.excused : '—' }}</td>
+                                        <td>{{ row ? row.late : '—' }}</td>
+                                        <td>
+                                            {% if row and row.total > 0 %}
+                                                <div class="attendance-summary__rate-cell">
+                                                    <div class="attendance-summary__mini-bar" aria-hidden="true">
+                                                        <span style="width:{{ row.rate }}%;" class="attendance-summary__mini-bar-fill {{ row.rate >= 80 ? 'attendance-summary__mini-bar-fill--ok' : (row.rate >= 50 ? 'attendance-summary__mini-bar-fill--mid' : 'attendance-summary__mini-bar-fill--low') }}"></span>
+                                                    </div>
+                                                    <span class="tactical-badge {{ row.rate >= 80 ? 'tactical-badge--lime' : (row.rate >= 50 ? '' : 'tactical-badge--primary') }}">{{ row.rate }}%</span>
+                                                </div>
+                                            {% else %}
+                                                <span class="attendance-summary__na">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </section>
 
-    <div class="tactical-card">
-        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Derniers pointages</div>
-        {% if recentAttendances is empty %}
-            <p class="tactical-card__sub">Aucune présence saisie sur cette période.</p>
-        {% else %}
-            <div class="tactical-table-wrap">
-                <table class="tactical-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Joueur</th>
-                            <th>Événement</th>
-                            <th>Statut</th>
-                            <th>Motif</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for attendance in recentAttendances %}
-                            {% set fixture = attendance.fixture %}
-                            {% set training = attendance.trainingSession %}
-                            {% set eventDate = fixture ? fixture.matchDate : training.startsAt %}
-                            <tr>
-                                <td>{{ eventDate|date('d/m/Y H:i') }}</td>
-                                <td>{{ attendance.player.fullName }}</td>
-                                <td>
-                                    {% if fixture %}
-                                        Match vs {{ fixture.opponent }}
-                                    {% else %}
-                                        {{ training.title }}
-                                    {% endif %}
-                                </td>
-                                <td><span class="tactical-badge {{ attendance.status == 'present' ? 'tactical-badge--lime' : '' }}">{{ attendance.statusLabel }}</span></td>
-                                <td>{{ attendance.reason ?: '—' }}</td>
-                            </tr>
+            <section class="tactical-card attendance-summary__panel">
+                <div class="attendance-summary__panel-head">
+                    <h2 class="tactical-card__title">Derniers pointages</h2>
+                    <p class="tactical-card__sub">Lignes individuelles enregistrées (les plus récentes en premier).</p>
+                </div>
+                {% if recentAttendances is empty %}
+                    <p class="attendance-summary__empty">Aucune présence sur cette période. Ouvre une feuille depuis le calendrier ou le dashboard.</p>
+                {% else %}
+                    <div class="tactical-table-wrap">
+                        <table class="tactical-table attendance-summary__recent-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Joueur</th>
+                                    <th scope="col">Événement</th>
+                                    <th scope="col">Statut</th>
+                                    <th scope="col">Motif</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendance in recentAttendances %}
+                                    {% set fixture = attendance.fixture %}
+                                    {% set training = attendance.trainingSession %}
+                                    {% set eventDate = fixture ? fixture.matchDate : training.startsAt %}
+                                    {% set sheetUrl = fixture
+                                        ? path('app_fixture_attendance', {id: team.id, fixtureId: fixture.id})
+                                        : path('app_training_attendance', {id: team.id, sessionId: training.id}) %}
+                                    {% set pillClass = attendance.status == 'present' ? 'attendance-summary__pill--present'
+                                        : attendance.status == 'late' ? 'attendance-summary__pill--late'
+                                        : attendance.status == 'excused' ? 'attendance-summary__pill--excused'
+                                        : 'attendance-summary__pill--absent' %}
+                                    <tr>
+                                        <td class="attendance-summary__nowrap">{{ eventDate|date('d/m/Y H:i') }}</td>
+                                        <td><strong>{{ attendance.player.fullName }}</strong></td>
+                                        <td>
+                                            {% if fixture %}
+                                                <span class="attendance-summary__event-type">Match</span>
+                                                vs {{ fixture.opponent }}
+                                            {% else %}
+                                                <span class="attendance-summary__event-type">Séance</span>
+                                                {{ training.title }}
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="attendance-summary__pill {{ pillClass }}">{{ attendance.statusLabel }}</span></td>
+                                        <td class="attendance-summary__reason">{{ attendance.reason ?: '—' }}</td>
+                                        <td class="attendance-summary__cell-link"><a href="{{ sheetUrl }}" class="attendance-summary__link-sheet">Feuille</a></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+
+        <aside class="attendance-summary__aside" aria-label="Raccourcis">
+            <section class="tactical-card attendance-summary__aside-card">
+                <div class="attendance-summary__panel-head">
+                    <h2 class="tactical-card__title">À venir</h2>
+                    <p class="tactical-card__sub">Accès rapide aux feuilles de présence.</p>
+                </div>
+                {% if upcomingEvents is empty %}
+                    <p class="attendance-summary__empty attendance-summary__empty--sm">Aucun match ou séance programmé.</p>
+                    <a href="{{ path('app_training_new', {id: team.id}) }}" class="tactical-btn tactical-btn--ghost tactical-btn--sm">+ Séance</a>
+                {% else %}
+                    <ul class="attendance-summary__aside-list">
+                        {% for event in upcomingEvents %}
+                            <li>
+                                <a href="{{ event.url }}" class="attendance-summary__aside-link">
+                                    <span class="tactical-badge {{ event.type == 'Match' ? 'tactical-badge--lime' : 'tactical-badge--primary' }}">{{ event.type }}</span>
+                                    <strong class="attendance-summary__aside-title">{{ event.title }}</strong>
+                                    <span class="attendance-summary__aside-meta">{{ event.date|date('d/m H:i') }} · {{ event.status }}</span>
+                                    <span class="team-dashboard__progress-bar attendance-summary__aside-bar" aria-hidden="true">
+                                        <span style="width:{{ event.rate }}%;"></span>
+                                    </span>
+                                </a>
+                            </li>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
+                    </ul>
+                {% endif %}
+            </section>
+
+            <section class="tactical-card attendance-summary__aside-card">
+                <div class="attendance-summary__panel-head">
+                    <h2 class="tactical-card__title">Feuilles enregistrées</h2>
+                    <p class="tactical-card__sub">Dernières saisies pour {{ team.name }}.</p>
+                </div>
+                {% if savedSheetsPreview is empty %}
+                    <p class="attendance-summary__empty attendance-summary__empty--sm">Aucune feuille pour le moment.</p>
+                {% else %}
+                    <ul class="attendance-summary__aside-list">
+                        {% for sheet in savedSheetsPreview %}
+                            <li>
+                                <a href="{{ sheet.url }}" class="attendance-summary__aside-link">
+                                    <span class="tactical-badge {{ sheet.type == 'Match' ? 'tactical-badge--lime' : 'tactical-badge--primary' }}">{{ sheet.type }}</span>
+                                    <strong class="attendance-summary__aside-title">{{ sheet.title }}</strong>
+                                    <span class="attendance-summary__aside-meta">{{ sheet.date|date('d/m/Y') }} · {{ sheet.present }}/{{ sheet.entered }} présents · {{ sheet.rate }}%</span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+        </aside>
     </div>
 </div>
 {% endblock %}

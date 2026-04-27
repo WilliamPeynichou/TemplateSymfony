@@ -54,6 +54,9 @@ class Player
     #[ORM\Column]
     private ?int $number = null;
 
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $licenseNumber = null;
+
     #[ORM\Column(length: 10)]
     private ?string $position = null;
 
@@ -136,6 +139,9 @@ class Player
 
     public function getNumber(): ?int { return $this->number; }
     public function setNumber(int $number): static { $this->number = $number; return $this; }
+
+    public function getLicenseNumber(): ?string { return $this->licenseNumber; }
+    public function setLicenseNumber(?string $licenseNumber): static { $this->licenseNumber = $licenseNumber; return $this; }
 
     public function getPosition(): ?string { return $this->position; }
     public function setPosition(string $position): static { $this->position = $position; return $this; }

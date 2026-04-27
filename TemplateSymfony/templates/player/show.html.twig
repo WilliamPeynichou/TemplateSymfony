@@ -1,0 +1,170 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}{{ player.fullName }} — {{ team.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title"><em>{{ player.fullName }}</em></h1>
+        <p class="tactical-page-header__sub">
+            <span class="tactical-badge tactical-badge--primary">#{{ player.number }}</span>
+            {{ team.name }}
+            {% if player.licenseNumber %}
+                <span class="player-profile__sep">·</span> Licence <strong>{{ player.licenseNumber }}</strong>
+            {% endif %}
+        </p>
+    </div>
+    <div class="player-profile__header-actions">
+        <a href="{{ path('app_player_edit', {teamId: team.id, id: player.id}) }}" class="tactical-btn tactical-btn--primary">Modifier</a>
+        <a href="{{ path('app_player_index', {teamId: team.id}) }}" class="tactical-btn tactical-btn--outline">← Effectif</a>
+    </div>
+</div>
+
+<div class="tactical-page-body player-profile">
+    <div class="player-profile__hero tactical-card">
+        <div class="player-profile__identity">
+            {% if player.photo %}
+                <img src="/uploads/players/{{ player.photo }}" alt="" class="player-profile__photo">
+            {% else %}
+                <div class="player-profile__photo player-profile__photo--placeholder" aria-hidden="true">
+                    {{ player.firstName|slice(0,1) }}{{ player.lastName|slice(0,1) }}
+                </div>
+            {% endif %}
+            <div class="player-profile__meta">
+                <div class="player-profile__chips">
+                    <span class="tactical-chip-pos tactical-chip-pos--{{ player.position == 'GK' ? 'gk' : (player.position in ['CB','LB','RB'] ? 'def' : (player.position in ['CDM','CM','CAM'] ? 'mil' : 'att')) }}">{{ player.position }}</span>
+                    {% set statusClass = player.status == 'present' ? 'tactical-badge--lime' : (player.status == 'injured' ? '' : '') %}
+                    <span class="tactical-badge {{ statusClass }}">{{ player.statusLabel }}</span>
+                </div>
+                {% if player.statusReason %}
+                    <p class="player-profile__reason">{{ player.statusReason }}</p>
+                {% endif %}
+                <dl class="player-profile__dl">
+                    <div><dt>Licence</dt><dd>{{ player.licenseNumber ?: '—' }}</dd></div>
+                    <div><dt>Âge</dt><dd>{{ player.age ? player.age ~ ' ans' : '—' }}</dd></div>
+                    <div><dt>Naissance</dt><dd>{{ player.dateOfBirth ? player.dateOfBirth|date('d/m/Y') : '—' }}</dd></div>
+                    <div><dt>Pied</dt><dd>{% if player.strongFoot == 'right' %}Droit{% elseif player.strongFoot == 'left' %}Gauche{% elseif player.strongFoot == 'both' %}Ambi{% else %}—{% endif %}</dd></div>
+                    <div><dt>Taille / Poids</dt><dd>{% if player.height %}{{ player.height }} cm{% else %}—{% endif %} · {% if player.weight %}{{ player.weight }} kg{% else %}—{% endif %}</dd></div>
+                </dl>
+            </div>
+        </div>
+        <div class="player-profile__contact">
+            <h2 class="player-profile__aside-title">Contact</h2>
+            {% if player.email %}
+                <p><a href="mailto:{{ player.email }}">{{ player.email }}</a></p>
+            {% endif %}
+            {% if player.phone %}
+                <p><a href="tel:{{ player.phone|replace({' ': '', '.': ''}) }}">{{ player.phone }}</a></p>
+            {% endif %}
+            {% if player.emergencyContact %}
+                <p class="player-profile__muted"><strong>Urgence</strong><br>{{ player.emergencyContact }}</p>
+            {% endif %}
+            {% if not player.email and not player.phone and not player.emergencyContact %}
+                <p class="player-profile__muted">Non renseigné — <a href="{{ path('app_player_edit', {teamId: team.id, id: player.id}) }}">compléter la fiche</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <section class="tactical-card player-profile__section" aria-labelledby="presence-heading">
+        <h2 id="presence-heading" class="tactical-card__title">Présences &amp; absentéisme</h2>
+        <p class="tactical-card__sub">Statistiques sur tous les pointages enregistrés pour {{ team.name }} (matchs et entraînements).</p>
+
+        {% if attendanceRow and attendanceRow.total > 0 %}
+            <div class="player-profile__stats">
+                <article class="tactical-card team-dashboard__stat-card team-dashboard__stat-card--main">
+                    <span class="team-dashboard__stat-label">Taux de présence</span>
+                    <strong class="team-dashboard__stat-value">{{ attendanceRow.rate }}%</strong>
+                    <p class="tactical-card__sub">{{ attendanceRow.present }} présence{{ attendanceRow.present > 1 ? 's' : '' }} comptée{{ attendanceRow.present > 1 ? 's' : '' }} sur {{ attendanceRow.total }} appel{{ attendanceRow.total > 1 ? 's' : '' }}</p>
+                </article>
+                <article class="tactical-card team-dashboard__stat-card">
+                    <span class="team-dashboard__stat-label">Absentéisme (absences non justifiées)</span>
+                    <strong class="team-dashboard__stat-value">{{ absenteeismRate }}%</strong>
+                    <p class="tactical-card__sub">{{ attendanceRow.absent }} absence{{ attendanceRow.absent > 1 ? 's' : '' }} « absent »</p>
+                </article>
+                <article class="tactical-card team-dashboard__stat-card">
+                    <span class="team-dashboard__stat-label">Absences + justifiées</span>
+                    <strong class="team-dashboard__stat-value">{{ absenceBroadRate }}%</strong>
+                    <p class="tactical-card__sub">{{ attendanceRow.excused }} justifiée{{ attendanceRow.excused > 1 ? 's' : '' }} · {{ attendanceRow.late }} retard{{ attendanceRow.late > 1 ? 's' : '' }}</p>
+                </article>
+            </div>
+        {% else %}
+            <p class="player-profile__muted">Aucun pointage enregistré pour ce joueur. Les feuilles de présence sont disponibles depuis le <a href="{{ path('app_team_calendar', {id: team.id}) }}">calendrier</a> ou le <a href="{{ path('app_team_dashboard', {id: team.id}) }}">dashboard</a>.</p>
+        {% endif %}
+    </section>
+
+    <section class="tactical-card player-profile__section" aria-labelledby="history-heading">
+        <h2 id="history-heading" class="tactical-card__title">Derniers pointages</h2>
+        {% if recentAttendances is empty %}
+            <p class="tactical-card__sub">Aucune ligne récente.</p>
+        {% else %}
+            <div class="tactical-table-wrap">
+                <table class="tactical-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Événement</th>
+                            <th>Statut</th>
+                            <th>Motif</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attendance in recentAttendances %}
+                            {% set fixture = attendance.fixture %}
+                            {% set training = attendance.trainingSession %}
+                            {% set eventDate = fixture ? fixture.matchDate : training.startsAt %}
+                            {% set sheetUrl = fixture
+                                ? path('app_fixture_attendance', {id: team.id, fixtureId: fixture.id})
+                                : path('app_training_attendance', {id: team.id, sessionId: training.id}) %}
+                            {% set pillClass = attendance.status == 'present' ? 'attendance-summary__pill--present'
+                                : attendance.status == 'late' ? 'attendance-summary__pill--late'
+                                : attendance.status == 'excused' ? 'attendance-summary__pill--excused'
+                                : 'attendance-summary__pill--absent' %}
+                            <tr>
+                                <td class="attendance-summary__nowrap">{{ eventDate|date('d/m/Y H:i') }}</td>
+                                <td>
+                                    {% if fixture %}Match vs {{ fixture.opponent }}{% else %}{{ training.title }}{% endif %}
+                                </td>
+                                <td><span class="attendance-summary__pill {{ pillClass }}">{{ attendance.statusLabel }}</span></td>
+                                <td class="material-stock__cell-notes">{{ attendance.reason ?: '—' }}</td>
+                                <td><a href="{{ sheetUrl }}" class="material-stock__link-sheet">Feuille</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="tactical-card player-profile__section" aria-labelledby="status-heading">
+        <h2 id="status-heading" class="tactical-card__title">Historique du statut</h2>
+        {% if statusHistory|length == 0 %}
+            <p class="tactical-card__sub">Aucun changement enregistré.</p>
+        {% else %}
+            <div class="tactical-table-wrap">
+                <table class="tactical-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Changement</th>
+                            <th>Motif</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in statusHistory %}
+                            <tr>
+                                <td>{{ item.changedAt|date('d/m/Y H:i') }}</td>
+                                <td>{{ item.oldStatusLabel }} → {{ item.newStatusLabel }}</td>
+                                <td>{{ item.reason ?: '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

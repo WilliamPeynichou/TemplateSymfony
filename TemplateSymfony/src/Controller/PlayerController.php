@@ -41,6 +41,45 @@ class PlayerController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}', name: 'app_player_show', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function show(
+        int $teamId,
+        Player $player,
+        EntityManagerInterface $em,
+        AttendanceRepository $attendanceRepository,
+        PlayerStatusHistoryRepository $statusHistoryRepository,
+    ): Response {
+        $team = $em->find(Team::class, $teamId);
+        if (!$team instanceof Team) {
+            throw $this->createNotFoundException();
+        }
+        $this->denyAccessUnlessGranted('COACH', $team);
+        if ($player->getTeam()?->getId() !== $team->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $summaryByPlayer = $attendanceRepository->getSummaryByPlayerForTeam($team);
+        $attendanceRow   = $summaryByPlayer[$player->getId()] ?? null;
+
+        $absenteeismRate  = null;
+        $absenceBroadRate = null;
+        if (null !== $attendanceRow && $attendanceRow['total'] > 0) {
+            $t                 = $attendanceRow['total'];
+            $absenteeismRate   = (int) round(($attendanceRow['absent'] / $t) * 100);
+            $absenceBroadRate  = (int) round((($attendanceRow['absent'] + $attendanceRow['excused']) / $t) * 100);
+        }
+
+        return $this->render('player/show.html.twig', [
+            'team'               => $team,
+            'player'             => $player,
+            'attendanceRow'      => $attendanceRow,
+            'absenteeismRate'    => $absenteeismRate,
+            'absenceBroadRate'   => $absenceBroadRate,
+            'recentAttendances'  => $attendanceRepository->findRecentForPlayer($player, 40),
+            'statusHistory'      => $statusHistoryRepository->findLatestForPlayer($player),
+        ]);
+    }
+
     #[Route('/new', name: 'app_player_new')]
     public function new(int $teamId, Request $request, EntityManagerInterface $em, FileUploadService $uploader): Response
     {
@@ -100,7 +139,7 @@ class PlayerController extends AbstractController
             }
             $em->flush();
             $this->addFlash('success', 'Joueur mis à jour.');
-            return $this->redirectToRoute('app_player_index', ['teamId' => $teamId]);
+            return $this->redirectToRoute('app_player_show', ['teamId' => $teamId, 'id' => $player->getId()]);
         }
 
         return $this->render('player/edit.html.twig', [

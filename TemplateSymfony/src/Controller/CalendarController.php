@@ -27,52 +27,204 @@ class CalendarController extends AbstractController
     #[Route('/teams/{id}/calendar', name: 'app_team_calendar', methods: ['GET'])]
     public function show(
         Team $team,
+        Request $request,
         FixtureRepository $fixtures,
         TrainingSessionRepository $trainings,
         AttendanceRepository $attendances,
     ): Response {
         $this->denyAccessUnlessGranted('COACH', $team);
+
+        $monthInput = (string) $request->query->get('month', '');
+        try {
+            $cursor = $monthInput !== ''
+                ? new \DateTimeImmutable($monthInput.'-01')
+                : new \DateTimeImmutable('first day of this month');
+        } catch (\Exception) {
+            $cursor = new \DateTimeImmutable('first day of this month');
+        }
+
+        $monthStart = $cursor->modify('first day of this month')->setTime(0, 0);
+        $monthEnd   = $cursor->modify('last day of this month')->setTime(23, 59, 59);
+
+        // Grille : commence au lundi avant/égal au 1er du mois
+        $gridStart = $monthStart;
+        while ((int) $gridStart->format('N') !== 1) {
+            $gridStart = $gridStart->modify('-1 day');
+        }
+        // Termine au dimanche après/égal au dernier du mois
+        $gridEnd = $monthEnd;
+        while ((int) $gridEnd->format('N') !== 7) {
+            $gridEnd = $gridEnd->modify('+1 day');
+        }
+
+        // Indexer les events par 'Y-m-d'
+        $eventsByDay = [];
+        foreach ($fixtures->findByTeamOrderedByDate($team) as $f) {
+            if ($f->getMatchDate() < $gridStart || $f->getMatchDate() > $gridEnd) continue;
+            $key      = $f->getMatchDate()->format('Y-m-d');
+            $strategy = $f->getTacticalStrategy();
+            $eventsByDay[$key][] = [
+                'type'         => 'match',
+                'time'         => $f->getMatchDate()->format('H:i'),
+                'title'        => 'vs '.$f->getOpponent(),
+                'meta'         => trim(($f->getCompetition() ?: '').' · '.$f->getVenue(), ' ·'),
+                'url'          => $this->generateUrl('app_fixture_attendance', ['id' => $team->getId(), 'fixtureId' => $f->getId()]),
+                'date'         => $f->getMatchDate(),
+                'strategyName' => $strategy?->getName(),
+                'strategyUrl'  => $strategy
+                    ? $this->generateUrl('app_strategy_edit', ['teamId' => $team->getId(), 'id' => $strategy->getId()])
+                    : null,
+                'formation'    => $strategy?->getFormation(),
+            ];
+        }
+        foreach ($trainings->findByTeamOrderedByDate($team) as $t) {
+            if ($t->getStartsAt() < $gridStart || $t->getStartsAt() > $gridEnd) continue;
+            $key = $t->getStartsAt()->format('Y-m-d');
+            $eventsByDay[$key][] = [
+                'type'  => 'training',
+                'time'  => $t->getStartsAt()->format('H:i'),
+                'title' => $t->getTitle(),
+                'meta'  => $t->getDurationMinutes().' min'.($t->getFocus() ? ' · '.$t->getFocus() : ''),
+                'url'   => $this->generateUrl('app_training_attendance', ['id' => $team->getId(), 'sessionId' => $t->getId()]),
+                'date'  => $t->getStartsAt(),
+            ];
+        }
+        foreach ($eventsByDay as &$list) {
+            usort($list, fn($a, $b) => $a['date'] <=> $b['date']);
+        }
+        unset($list);
+
+        // Construire les semaines
+        $weeks = [];
+        $day   = $gridStart;
+        $today = (new \DateTimeImmutable('today'))->format('Y-m-d');
+        while ($day <= $gridEnd) {
+            $week = [];
+            for ($i = 0; $i < 7; $i++) {
+                $key = $day->format('Y-m-d');
+                $week[] = [
+                    'date'         => $day,
+                    'dayNum'       => (int) $day->format('j'),
+                    'isCurrent'    => $day->format('Y-m') === $monthStart->format('Y-m'),
+                    'isToday'      => $key === $today,
+                    'events'       => $eventsByDay[$key] ?? [],
+                ];
+                $day = $day->modify('+1 day');
+            }
+            $weeks[] = $week;
+        }
+
         $attendanceSummary = $attendances->getSummaryByPlayerForTeam($team);
 
         return $this->render('calendar/show.html.twig', [
-            'team' => $team,
-            'fixtures' => $fixtures->findByTeamOrderedByDate($team),
-            'trainings' => $trainings->findByTeamOrderedByDate($team),
-            'attendanceSummary' => $attendanceSummary,
+            'team'             => $team,
+            'monthStart'       => $monthStart,
+            'prevMonth'        => $monthStart->modify('-1 month')->format('Y-m'),
+            'nextMonth'        => $monthStart->modify('+1 month')->format('Y-m'),
+            'currentMonth'     => (new \DateTimeImmutable('first day of this month'))->format('Y-m'),
+            'weeks'            => $weeks,
             'attendanceTotals' => $this->buildAttendanceTotals($attendanceSummary),
         ]);
     }
 
     #[Route('/teams/{id}/attendance', name: 'app_team_attendance_summary', methods: ['GET'])]
-    public function summary(Team $team, Request $request, AttendanceRepository $attendances): Response
-    {
+    public function summary(
+        Team $team,
+        Request $request,
+        AttendanceRepository $attendances,
+        FixtureRepository $fixtures,
+        TrainingSessionRepository $trainings,
+    ): Response {
         $this->denyAccessUnlessGranted('COACH', $team);
 
         $fromInput = trim((string) $request->query->get('from', ''));
-        $toInput = trim((string) $request->query->get('to', ''));
+        $toInput   = trim((string) $request->query->get('to', ''));
+        $preset    = trim((string) $request->query->get('preset', ''));
+
+        if ($fromInput === '' && $toInput === '' && $preset !== '' && $preset !== 'all') {
+            $today     = new \DateTimeImmutable('today');
+            $fromInput = match ($preset) {
+                '7' => $today->modify('-7 days')->format('Y-m-d'),
+                '30' => $today->modify('-30 days')->format('Y-m-d'),
+                '90' => $today->modify('-90 days')->format('Y-m-d'),
+                '365' => $today->modify('-365 days')->format('Y-m-d'),
+                default => '',
+            };
+            if ($fromInput !== '') {
+                $toInput = $today->format('Y-m-d');
+            }
+        }
 
         $from = $fromInput !== '' ? new \DateTimeImmutable($fromInput.' 00:00:00') : null;
-        $to = $toInput !== '' ? new \DateTimeImmutable($toInput.' 23:59:59') : null;
+        $to   = $toInput !== '' ? new \DateTimeImmutable($toInput.' 23:59:59') : null;
 
         $summary = $attendances->getSummaryByPlayerForTeam($team, $from, $to);
-        $totals = $this->buildAttendanceTotals($summary);
-        $recentAttendances = $attendances->findRecentForTeam($team, $from, $to, 25);
+        $totals  = $this->buildAttendanceTotals($summary);
+        $recentAttendances = $attendances->findRecentForTeam($team, $from, $to, 40);
 
         $players = $team->getPlayers()->toArray();
         usort($players, function (Player $left, Player $right) use ($summary): int {
-            $leftRate = $summary[$left->getId()] ?? ['rate' => -1, 'total' => 0];
+            $leftRate  = $summary[$left->getId()] ?? ['rate' => -1, 'total' => 0];
             $rightRate = $summary[$right->getId()] ?? ['rate' => -1, 'total' => 0];
 
             return [$rightRate['rate'], $rightRate['total'], $left->getNumber()] <=> [$leftRate['rate'], $leftRate['total'], $right->getNumber()];
         });
 
+        $periodLabel = 'Toute la période';
+        if ($from instanceof \DateTimeImmutable && $to instanceof \DateTimeImmutable) {
+            $periodLabel = $from->format('d/m/Y').' — '.$to->format('d/m/Y');
+        } elseif ($from instanceof \DateTimeImmutable) {
+            $periodLabel = 'Depuis le '.$from->format('d/m/Y');
+        } elseif ($to instanceof \DateTimeImmutable) {
+            $periodLabel = 'Jusqu\'au '.$to->format('d/m/Y');
+        }
+
+        $playersWithData = 0;
+        foreach ($summary as $row) {
+            if (($row['total'] ?? 0) > 0) {
+                ++$playersWithData;
+            }
+        }
+
+        $sheetsRaw = $attendances->findSavedSheetsForTeam($team);
+        $savedSheetsPreview = array_map(function (array $sheet) use ($team): array {
+            $event = $sheet['event'];
+            $url   = $event instanceof Fixture
+                ? $this->generateUrl('app_fixture_attendance', ['id' => $team->getId(), 'fixtureId' => $event->getId()])
+                : $this->generateUrl('app_training_attendance', ['id' => $team->getId(), 'sessionId' => $event->getId()]);
+            $entered = max(1, $sheet['entered']);
+
+            return [
+                'type'    => $sheet['type'],
+                'title'   => $sheet['title'],
+                'date'    => $sheet['date'],
+                'savedAt' => $sheet['savedAt'],
+                'rate'    => (int) round(($sheet['present'] / $entered) * 100),
+                'url'     => $url,
+                'present' => $sheet['present'],
+                'entered' => $sheet['entered'],
+            ];
+        }, \array_slice($sheetsRaw, 0, 8));
+
+        $upcomingEvents = $this->buildCalendarEvents(
+            $team,
+            $fixtures->findUpcomingForTeam($team, 8),
+            $trainings->findUpcomingForTeam($team, 8),
+            $attendances,
+        );
+
         return $this->render('calendar/summary.html.twig', [
-            'team' => $team,
-            'players' => $players,
-            'summary' => $summary,
-            'totals' => $totals,
-            'recentAttendances' => $recentAttendances,
-            'filters' => ['from' => $fromInput, 'to' => $toInput],
+            'team'               => $team,
+            'players'            => $players,
+            'summary'            => $summary,
+            'totals'             => $totals,
+            'recentAttendances'  => $recentAttendances,
+            'filters'            => ['from' => $fromInput, 'to' => $toInput, 'preset' => $preset],
+            'periodLabel'        => $periodLabel,
+            'savedSheetsPreview' => $savedSheetsPreview,
+            'upcomingEvents'     => \array_slice($upcomingEvents, 0, 10),
+            'playersCount'       => \count($players),
+            'playersWithData'    => $playersWithData,
         ]);
     }
 
@@ -128,7 +280,7 @@ class CalendarController extends AbstractController
                 throw $this->createAccessDeniedException('Jeton CSRF invalide.');
             }
             $this->saveTrainingAttendances($team, $session, $request, $em, $attendances);
-            $this->addFlash('success', 'Présences de la séance enregistrées.');
+            $this->addFlash('success', 'Feuille de présence enregistrée et liée à la séance.');
 
             return $this->redirectToRoute('app_training_attendance', [
                 'id' => $team->getId(),
@@ -166,7 +318,7 @@ class CalendarController extends AbstractController
                 throw $this->createAccessDeniedException('Jeton CSRF invalide.');
             }
             $this->saveFixtureAttendances($team, $fixture, $request, $em, $attendances);
-            $this->addFlash('success', 'Présences du match enregistrées.');
+            $this->addFlash('success', 'Feuille de présence enregistrée et liée au match.');
 
             return $this->redirectToRoute('app_fixture_attendance', [
                 'id' => $team->getId(),
@@ -249,6 +401,13 @@ class CalendarController extends AbstractController
                 ->setPlayer($player)
                 ->setTrainingSession($session);
 
+            if (($row['status'] ?? '') === '') {
+                if (null !== $attendance->getId()) {
+                    $em->remove($attendance);
+                }
+                continue;
+            }
+
             $this->fillAttendance($attendance, $row);
             $em->persist($attendance);
         }
@@ -272,6 +431,13 @@ class CalendarController extends AbstractController
             $attendance = $attendances->findOneForFixture($player, $fixture) ?? (new Attendance())
                 ->setPlayer($player)
                 ->setFixture($fixture);
+
+            if (($row['status'] ?? '') === '') {
+                if (null !== $attendance->getId()) {
+                    $em->remove($attendance);
+                }
+                continue;
+            }
 
             $this->fillAttendance($attendance, $row);
             $em->persist($attendance);
@@ -326,7 +492,7 @@ class CalendarController extends AbstractController
      * @param Player[] $players
      * @param array<int, Attendance> $attendanceMap
      *
-     * @return array{players:int,present:int,absent:int,excused:int,late:int}
+     * @return array{players:int,present:int,absent:int,excused:int,late:int,unmarked:int}
      */
     private function buildAttendanceSheetTotals(array $players, array $attendanceMap): array
     {
@@ -336,15 +502,70 @@ class CalendarController extends AbstractController
             'absent' => 0,
             'excused' => 0,
             'late' => 0,
+            'unmarked' => 0,
         ];
 
         foreach ($players as $player) {
-            $status = $attendanceMap[$player->getId() ?? 0]?->getStatus() ?? Attendance::STATUS_PRESENT;
+            $attendance = $attendanceMap[$player->getId() ?? 0] ?? null;
+            $status = $attendance?->getStatus() ?? 'unmarked';
             if (isset($totals[$status])) {
                 ++$totals[$status];
             }
         }
 
         return $totals;
+    }
+
+    /**
+     * @param Fixture[] $fixtures
+     * @param TrainingSession[] $trainings
+     *
+     * @return array<int, array{type:string,title:string,meta:string,date:\DateTimeImmutable,url:string,rate:int,status:string}>
+     */
+    private function buildCalendarEvents(
+        Team $team,
+        array $fixtures,
+        array $trainings,
+        AttendanceRepository $attendances,
+    ): array {
+        $events = [];
+        $playersCount = max(1, $team->getPlayers()->count());
+        $now = new \DateTimeImmutable();
+
+        foreach ($fixtures as $fixture) {
+            if ($fixture->getMatchDate() < $now) {
+                continue;
+            }
+            $entered = \count($attendances->findIndexedForFixture($fixture));
+            $events[] = [
+                'type' => 'Match',
+                'title' => 'vs '.$fixture->getOpponent(),
+                'meta' => trim(($fixture->getCompetition() ?: 'Match').' · '.$fixture->getVenue(), ' ·'),
+                'date' => $fixture->getMatchDate(),
+                'url' => $this->generateUrl('app_fixture_attendance', ['id' => $team->getId(), 'fixtureId' => $fixture->getId()]),
+                'rate' => (int) round(($entered / $playersCount) * 100),
+                'status' => $entered === 0 ? 'À faire' : ($entered >= $playersCount ? 'Complet' : 'En cours'),
+            ];
+        }
+
+        foreach ($trainings as $training) {
+            if ($training->getStartsAt() < $now) {
+                continue;
+            }
+            $entered = \count($attendances->findIndexedForTraining($training));
+            $events[] = [
+                'type' => 'Entraînement',
+                'title' => $training->getTitle(),
+                'meta' => trim($training->getDurationMinutes().' min'.($training->getFocus() ? ' · '.$training->getFocus() : ''), ' ·'),
+                'date' => $training->getStartsAt(),
+                'url' => $this->generateUrl('app_training_attendance', ['id' => $team->getId(), 'sessionId' => $training->getId()]),
+                'rate' => (int) round(($entered / $playersCount) * 100),
+                'status' => $entered === 0 ? 'À faire' : ($entered >= $playersCount ? 'Complet' : 'En cours'),
+            ];
+        }
+
+        usort($events, fn (array $left, array $right) => $left['date'] <=> $right['date']);
+
+        return $events;
     }
 }

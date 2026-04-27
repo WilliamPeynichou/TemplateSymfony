@@ -44,6 +44,10 @@
                     <span class="attendance-sheet__summary-label">Effectif</span>
                     <strong class="attendance-sheet__summary-value" data-attendance-target="playersCount">{{ totals.players }}</strong>
                 </article>
+                <article class="attendance-sheet__summary-card attendance-sheet__summary-card--unmarked">
+                    <span class="attendance-sheet__summary-label">Non pointés</span>
+                    <strong class="attendance-sheet__summary-value" data-attendance-target="unmarkedCount">{{ totals.unmarked }}</strong>
+                </article>
                 <article class="attendance-sheet__summary-card attendance-sheet__summary-card--present">
                     <span class="attendance-sheet__summary-label">Présents</span>
                     <strong class="attendance-sheet__summary-value" data-attendance-target="presentCount">{{ totals.present }}</strong>
@@ -68,6 +72,12 @@
                         data-action="attendance#filterRows"
                         data-filter="all">
                     Tous
+                </button>
+                <button type="button"
+                        class="attendance-sheet__filter-btn"
+                        data-action="attendance#filterRows"
+                        data-filter="unmarked">
+                    Non pointés
                 </button>
                 <button type="button"
                         class="attendance-sheet__filter-btn"
@@ -103,7 +113,7 @@
                     <tbody>
                         {% for player in players %}
                             {% set attendance = attendanceMap[player.id] ?? null %}
-                            {% set selectedStatus = attendance ? attendance.status : 'present' %}
+                            {% set selectedStatus = attendance ? attendance.status : 'unmarked' %}
                             {% set requiresReason = selectedStatus in ['absent', 'excused'] %}
                             {% set statusClass = player.status == 'present' ? 'tactical-badge--lime' : (player.status == 'injured' ? 'tactical-btn--danger' : '') %}
                             <tr class="attendance-sheet__row"
@@ -124,9 +134,15 @@
                                 <td>
                                     <input type="hidden"
                                            name="attendance[{{ player.id }}][status]"
-                                           value="{{ selectedStatus }}"
+                                           value="{{ selectedStatus == 'unmarked' ? '' : selectedStatus }}"
                                            data-attendance-target="statusInput">
                                     <div class="attendance-sheet__status-group" role="group" aria-label="Présence de {{ player.fullName }}">
+                                        <button type="button"
+                                                class="attendance-sheet__status-btn {{ selectedStatus == 'unmarked' ? 'attendance-sheet__status-btn--active' : '' }}"
+                                                data-action="attendance#selectStatus"
+                                                data-status="unmarked">
+                                            Non pointé
+                                        </button>
                                         {% for label, value in statuses %}
                                             <button type="button"
                                                     class="attendance-sheet__status-btn {{ selectedStatus == value ? 'attendance-sheet__status-btn--active' : '' }}"

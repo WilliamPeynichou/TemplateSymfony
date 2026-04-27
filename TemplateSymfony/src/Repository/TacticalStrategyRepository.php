@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\TacticalStrategy;
 use App\Entity\Team;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,6 +41,18 @@ class TacticalStrategyRepository extends ServiceEntityRepository
             ->setParameter('t', $team)
             ->orderBy('s.isDefault', 'DESC')
             ->addOrderBy('s.updatedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return TacticalStrategy[] */
+    public function findByCoach(User $coach): array
+    {
+        return $this->createQueryBuilder('s')
+            ->innerJoin('s.team', 't')
+            ->where('t.coach = :c')
+            ->setParameter('c', $coach)
+            ->orderBy('s.updatedAt', 'DESC')
             ->getQuery()
             ->getResult();
     }

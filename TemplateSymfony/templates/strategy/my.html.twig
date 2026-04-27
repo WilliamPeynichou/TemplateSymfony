@@ -1,0 +1,195 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Mes tactiques{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/strategy.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title"><em>Mes tactiques</em></h1>
+        <p class="tactical-page-header__sub">
+            {{ strategies|length }} tactique{{ strategies|length > 1 ? 's' : '' }}
+            sur {{ teams|length }} équipe{{ teams|length > 1 ? 's' : '' }}
+        </p>
+    </div>
+    <div style="display:flex;gap:0.75rem;align-items:center;">
+        {% if teams|length > 0 %}
+            <details class="my-strategies-create" style="position:relative;">
+                <summary class="tactical-btn tactical-btn--primary" style="list-style:none;cursor:pointer;">
+                    + Ajouter une tactique
+                </summary>
+                <form method="post"
+                      action="{{ path('app_strategy_new', {teamId: teams[0].id}) }}"
+                      class="my-strategies-create__form"
+                      id="newStrategyForm">
+                    <input type="hidden" name="mode" value="free">
+                    <label class="my-strategies-create__label">Équipe</label>
+                    <select name="_team" class="tactical-input"
+                            onchange="const o=this.options[this.selectedIndex]; document.getElementById('newStrategyForm').action = o.dataset.url;">
+                        {% for t in teams %}
+                            <option value="{{ t.id }}" data-url="{{ path('app_strategy_new', {teamId: t.id}) }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label class="my-strategies-create__label">Nom (optionnel)</label>
+                    <input type="text" name="name" class="tactical-input" placeholder="Ex. Match retour, Séance tactique…">
+
+                    <button type="submit" class="tactical-btn tactical-btn--primary" style="width:100%;margin-top:0.5rem;">
+                        Créer le plan libre
+                    </button>
+                </form>
+            </details>
+        {% endif %}
+    </div>
+</div>
+
+<div class="tactical-page-body">
+    {% if strategies|length == 0 %}
+        <div class="tactical-card" style="text-align:center;padding:3rem 1.5rem;">
+            <h3 style="margin:0 0 0.5rem;">Aucune tactique pour le moment</h3>
+            <p style="color:var(--on-surface-variant);margin:0 0 1.25rem;font-size:0.9375rem;">
+                {% if teams|length == 0 %}
+                    Créez d'abord une équipe pour pouvoir ajouter des tactiques.
+                {% else %}
+                    Crée ta première tactique en cliquant sur « + Ajouter une tactique ».
+                {% endif %}
+            </p>
+            {% if teams|length == 0 %}
+                <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--outline">Mes équipes</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="my-strategies-grid">
+            {% for s in strategies %}
+                <a href="{{ path('app_strategy_edit', {teamId: s.team.id, id: s.id}) }}" class="my-strategy-card">
+                    <div class="my-strategy-card__head">
+                        <span class="my-strategy-card__team">{{ s.team.name }}</span>
+                        {% if s.isDefault %}
+                            <span class="tactical-badge tactical-badge--lime" style="font-size:0.625rem;padding:0.1rem 0.4rem;">Défaut</span>
+                        {% endif %}
+                    </div>
+                    <h3 class="my-strategy-card__name">{{ s.name }}</h3>
+                    <div class="my-strategy-card__meta">
+                        {% if s.isFormation %}
+                            <span class="my-strategy-card__formation">⬡ {{ s.formation }}</span>
+                        {% else %}
+                            <span class="my-strategy-card__formation">○ Plan libre</span>
+                        {% endif %}
+                        <span class="my-strategy-card__sep">·</span>
+                        <span>{{ s.slots|length }} slot{{ s.slots|length > 1 ? 's' : '' }}</span>
+                    </div>
+                    {% if s.description %}
+                        <p class="my-strategy-card__desc">{{ s.description|length > 120 ? s.description|slice(0, 120) ~ '…' : s.description }}</p>
+                    {% endif %}
+                    <div class="my-strategy-card__foot">
+                        <span>Modifié le {{ s.updatedAt|date('d/m/Y') }}</span>
+                        <span class="my-strategy-card__edit">Éditer →</span>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.my-strategies-create__form {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    width: 320px;
+    background: var(--surface-container);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 10;
+}
+.my-strategies-create__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+.my-strategies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+.my-strategy-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 1.125rem;
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, transform 0.15s;
+}
+.my-strategy-card:hover {
+    border-color: #c7f300;
+    transform: translateY(-2px);
+}
+.my-strategy-card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+.my-strategy-card__team {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.my-strategy-card__name {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--on-surface);
+    line-height: 1.2;
+}
+.my-strategy-card__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    color: var(--on-surface-variant);
+}
+.my-strategy-card__formation {
+    color: #c7f300;
+    font-weight: 600;
+}
+.my-strategy-card__desc {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--on-surface-variant);
+    line-height: 1.4;
+}
+.my-strategy-card__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--outline-variant);
+    font-size: 0.75rem;
+    color: var(--on-surface-variant);
+}
+.my-strategy-card__edit {
+    color: #c7f300;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

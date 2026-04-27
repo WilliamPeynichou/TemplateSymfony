@@ -13,7 +13,7 @@
     </div>
 </div>
 
-<div class="tactical-page-body">
+<div class="tactical-page-body" data-controller="roster-filter">
     {% if players|length == 0 %}
         <div class="tactical-card-grid">
             <div class="tactical-card tactical-card--empty">
@@ -24,6 +24,13 @@
             </div>
         </div>
     {% else %}
+        <div class="roster-toolbar" role="group" aria-label="Filtres effectif">
+            <button type="button" class="attendance-sheet__filter-btn attendance-sheet__filter-btn--active" data-action="roster-filter#filter" data-filter="all">Tous</button>
+            <button type="button" class="attendance-sheet__filter-btn" data-action="roster-filter#filter" data-filter="available">Disponibles</button>
+            <button type="button" class="attendance-sheet__filter-btn" data-action="roster-filter#filter" data-filter="injured">Blessés</button>
+            <button type="button" class="attendance-sheet__filter-btn" data-action="roster-filter#filter" data-filter="absent">Absents</button>
+            <button type="button" class="attendance-sheet__filter-btn" data-action="roster-filter#filter" data-filter="risk">Présence faible</button>
+        </div>
         <div class="tactical-table-wrap">
             <table class="tactical-table">
                 <thead>
@@ -44,7 +51,11 @@
                 <tbody>
                     {% for player in players %}
                         {% set posGroup = player.position == 'GK' ? 'gk' : (player.position in ['CB','LB','RB'] ? 'def' : (player.position in ['CDM','CM','CAM'] ? 'mil' : 'att')) %}
-                        <tr>
+                        {% set presence = attendanceSummary[player.id] ?? null %}
+                        <tr data-roster-filter-target="row"
+                            data-status="{{ player.status }}"
+                            data-presence-risk="{{ presence and presence.total >= 3 and presence.rate < 70 ? '1' : '0' }}"
+                            data-position="{{ posGroup }}">
                             <td>
                                 <span class="tactical-badge tactical-badge--primary">{{ player.number }}</span>
                             </td>
@@ -58,7 +69,7 @@
                                             {{ player.firstName|slice(0,1) }}{{ player.lastName|slice(0,1) }}
                                         </div>
                                     {% endif %}
-                                    <strong style="font-weight:600;">{{ player.fullName }}</strong>
+                                    <a href="{{ path('app_player_show', {teamId: team.id, id: player.id}) }}" class="player-roster__name-link"><strong style="font-weight:600;">{{ player.fullName }}</strong></a>
                                 </div>
                             </td>
                             <td><span class="tactical-chip-pos tactical-chip-pos--{{ posGroup }}">{{ player.position }}</span></td>
@@ -81,7 +92,6 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% set presence = attendanceSummary[player.id] ?? null %}
                                 {% if presence %}
                                     <span class="tactical-badge {{ presence.rate >= 80 ? 'tactical-badge--lime' : '' }}">{{ presence.rate }}%</span>
                                     <div style="margin-top:0.35rem;color:var(--on-surface-variant);font-size:var(--text-label-sm);white-space:nowrap;">
@@ -102,11 +112,6 @@
                             <td>
                                 <div style="display:flex;gap:0.5rem;">
                                     <a href="{{ path('app_player_edit', {teamId: team.id, id: player.id}) }}" class="tactical-btn tactical-btn--outline tactical-btn--sm">Modifier</a>
-                                    <form method="post" action="{{ path('app_player_delete', {teamId: team.id, id: player.id}) }}"
-                                          onsubmit="return confirm('Supprimer {{ player.fullName }} ?')">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_player_' ~ player.id) }}">
-                                        <button type="submit" class="tactical-btn tactical-btn--danger tactical-btn--sm">×</button>
-                                    </form>
                                 </div>
                             </td>
                         </tr>

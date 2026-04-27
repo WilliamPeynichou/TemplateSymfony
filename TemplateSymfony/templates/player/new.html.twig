@@ -36,6 +36,11 @@
                     <div class="tactical-form-error">{{ form_errors(form.position) }}</div>
                 </div>
             </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label">{{ form_label(form.licenseNumber) }}</label>
+                {{ form_widget(form.licenseNumber, {attr: {class: 'tactical-input'}}) }}
+                <div class="tactical-form-error">{{ form_errors(form.licenseNumber) }}</div>
+            </div>
             <div class="tactical-form-row">
                 <div class="tactical-form-group">
                     <label class="tactical-form-label">{{ form_label(form.status) }}</label>

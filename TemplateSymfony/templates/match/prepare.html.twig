@@ -115,6 +115,7 @@
                     <div class="tactical-form-group">
                         <label class="tactical-form-label" for="strategy_id">Plan tactique actif</label>
                         <input type="hidden" id="strategy_id" name="strategy_id" value="{{ matchContext.strategyId }}">
+                        <input type="hidden" id="strategy_source" name="strategy_source" value="{{ matchContext.strategySource }}">
                         <div class="tactical-match-prepare__selected-plan">
                             <strong data-prepare-target="selectedStrategyName">{{ selectedStrategy ? selectedStrategy.name : 'Aucun plan sélectionné' }}</strong>
                             <span data-prepare-target="selectedStrategyMeta">
@@ -126,17 +127,54 @@
             </div>
 
             <div class="tactical-card tactical-match-prepare__section">
-                <div class="tactical-card__title">Plans enregistrés</div>
-                <p class="tactical-card__sub">Les plans libres et les tactiques formation sont sélectionnables directement depuis la bibliothèque de l'équipe.</p>
+                <div class="tactical-card__title">Tactique du match</div>
+                <p class="tactical-card__sub">Choisis une tactique existante ou crée une nouvelle tactique qui restera disponible dans le menu latéral.</p>
+
+                <div class="strategy-source-switch" role="group" aria-label="Source de la tactique">
+                    <button type="button"
+                            class="strategy-source-switch__option {{ matchContext.strategySource != 'create' ? 'strategy-source-switch__option--active' : '' }}"
+                            data-strategy-source="existing"
+                            onclick="prepareMatchSetStrategySource('existing')">
+                        Utiliser une tactique existante
+                    </button>
+                    <button type="button"
+                            class="strategy-source-switch__option {{ matchContext.strategySource == 'create' ? 'strategy-source-switch__option--active' : '' }}"
+                            data-strategy-source="create"
+                            onclick="prepareMatchSetStrategySource('create')">
+                        Créer une nouvelle tactique
+                    </button>
+                </div>
+
+                <div class="strategy-create-panel {{ matchContext.strategySource == 'create' ? 'strategy-create-panel--active' : '' }}" data-strategy-create-panel>
+                    <div class="tactical-form-row">
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="new_strategy_name">Nom de la nouvelle tactique</label>
+                            <input id="new_strategy_name"
+                                   type="text"
+                                   name="new_strategy_name"
+                                   class="tactical-input"
+                                   placeholder="Ex : Pressing haut vs bloc bas"
+                                   value="{{ matchContext.newStrategyName }}">
+                        </div>
+                        <div class="tactical-form-group">
+                            <label class="tactical-form-label" for="new_strategy_mode">Type</label>
+                            <select id="new_strategy_mode" name="new_strategy_mode" class="tactical-input">
+                                <option value="formation" {{ matchContext.newStrategyMode == 'formation' ? 'selected' : '' }}>Plan formation</option>
+                                <option value="free" {{ matchContext.newStrategyMode == 'free' ? 'selected' : '' }}>Plan libre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="tactical-card__sub">Les champs du brief tactique ci-dessous seront sauvegardés dans cette nouvelle tactique.</p>
+                </div>
 
                 {% if strategyBank %}
-                    <div class="tactical-plan-bank__summary">
+                    <div class="tactical-plan-bank__summary" data-strategy-existing-panel>
                         <span class="tactical-badge">{{ strategyBank.counts.total }} plans</span>
                         <span class="tactical-badge tactical-badge--lime">{{ strategyBank.counts.free }} libres</span>
                         <span class="tactical-badge tactical-badge--primary">{{ strategyBank.counts.formation }} formation</span>
                     </div>
 
-                    <div class="tactical-plan-bank">
+                    <div class="tactical-plan-bank" data-strategy-existing-panel>
                         <div class="tactical-plan-bank__group">
                             <div class="tactical-plan-bank__group-head">
                                 <strong>Plans libres</strong>
@@ -226,7 +264,7 @@
                         </div>
                     </div>
                 {% else %}
-                    <div class="tactical-plan-bank__empty tactical-plan-bank__empty--large">
+                    <div class="tactical-plan-bank__empty tactical-plan-bank__empty--large" data-strategy-existing-panel>
                         Choisis une équipe pour charger ses plans libres et ses tactiques formation.
                     </div>
                 {% endif %}
@@ -300,7 +338,7 @@
             </div>
 
             <div class="tactical-form-actions">
-                <button class="tactical-btn tactical-btn--primary" type="submit">Ouvrir le tableau tactique</button>
+                <button class="tactical-btn tactical-btn--primary" type="submit">Enregistrer la préparation</button>
                 <a href="{{ path('app_team_index') }}" class="tactical-btn tactical-btn--outline">Retour aux équipes</a>
             </div>
         </form>
@@ -427,6 +465,8 @@ function prepareMatchLoadTeam(teamId) {
 }
 
 function prepareMatchSelectStrategy(button) {
+    prepareMatchSetStrategySource('existing');
+
     const strategyIdInput = document.getElementById('strategy_id');
     if (!strategyIdInput) return;
 
@@ -450,6 +490,46 @@ function prepareMatchSelectStrategy(button) {
     }
 
     prepareMatchApplyStrategy(button.dataset);
+}
+
+function prepareMatchSetStrategySource(source) {
+    const normalized = source === 'create' ? 'create' : 'existing';
+    const sourceInput = document.getElementById('strategy_source');
+    if (sourceInput) {
+        sourceInput.value = normalized;
+    }
+
+    document.querySelectorAll('[data-strategy-source]').forEach(button => {
+        button.classList.toggle('strategy-source-switch__option--active', button.dataset.strategySource === normalized);
+    });
+
+    document.querySelectorAll('[data-strategy-existing-panel]').forEach(panel => {
+        panel.hidden = normalized === 'create';
+    });
+
+    const createPanel = document.querySelector('[data-strategy-create-panel]');
+    if (createPanel) {
+        createPanel.classList.toggle('strategy-create-panel--active', normalized === 'create');
+    }
+
+    if (normalized === 'create') {
+        const strategyIdInput = document.getElementById('strategy_id');
+        if (strategyIdInput) {
+            strategyIdInput.value = '';
+        }
+        document.querySelectorAll('.tactical-plan-card').forEach(card => {
+            card.classList.remove('tactical-plan-card--active');
+        });
+
+        const nameTarget = document.querySelector('[data-prepare-target="selectedStrategyName"]');
+        const metaTarget = document.querySelector('[data-prepare-target="selectedStrategyMeta"]');
+        if (nameTarget) {
+            nameTarget.textContent = 'Nouvelle tactique';
+        }
+        if (metaTarget) {
+            metaTarget.textContent = 'Elle sera créée et associée à ce match.';
+        }
+    }
 }
 
 function prepareMatchApplyStrategy(strategyData) {
@@ -480,5 +560,10 @@ function prepareMatchApplyStrategy(strategyData) {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const sourceInput = document.getElementById('strategy_source');
+    prepareMatchSetStrategySource(sourceInput?.value || 'existing');
+});
 </script>
 {% endblock %}

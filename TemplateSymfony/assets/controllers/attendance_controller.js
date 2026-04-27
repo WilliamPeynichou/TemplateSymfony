@@ -8,6 +8,7 @@ export default class extends Controller {
         'reasonInput',
         'reasonPlaceholder',
         'playersCount',
+        'unmarkedCount',
         'presentCount',
         'lateCount',
         'absentCount',
@@ -26,7 +27,7 @@ export default class extends Controller {
             return;
         }
 
-        const status = button.dataset.status || 'present';
+        const status = button.dataset.status || 'unmarked';
         row.dataset.status = status;
         this.syncRow(row);
         this.refreshSummary();
@@ -62,10 +63,10 @@ export default class extends Controller {
     }
 
     syncRow(row) {
-        const status = row.dataset.status || 'present';
+        const status = row.dataset.status || 'unmarked';
         const input = row.querySelector('[data-attendance-target="statusInput"]');
         if (input) {
-            input.value = status;
+            input.value = status === 'unmarked' ? '' : status;
         }
 
         row.querySelectorAll('.attendance-sheet__status-btn').forEach(button => {
@@ -96,6 +97,7 @@ export default class extends Controller {
     refreshSummary() {
         const counts = {
             players: this.rowTargets.length,
+            unmarked: 0,
             present: 0,
             late: 0,
             absent: 0,
@@ -103,16 +105,29 @@ export default class extends Controller {
         };
 
         this.rowTargets.forEach(row => {
-            const status = row.dataset.status || 'present';
+            const status = row.dataset.status || 'unmarked';
             if (status in counts) {
                 counts[status] += 1;
             }
         });
 
-        this.playersCountTarget.textContent = String(counts.players);
-        this.presentCountTarget.textContent = String(counts.present);
-        this.lateCountTarget.textContent = String(counts.late);
-        this.absentCountTarget.textContent = String(counts.absent);
-        this.excusedCountTarget.textContent = String(counts.excused);
+        if (this.hasPlayersCountTarget) {
+            this.playersCountTarget.textContent = String(counts.players);
+        }
+        if (this.hasUnmarkedCountTarget) {
+            this.unmarkedCountTarget.textContent = String(counts.unmarked);
+        }
+        if (this.hasPresentCountTarget) {
+            this.presentCountTarget.textContent = String(counts.present);
+        }
+        if (this.hasLateCountTarget) {
+            this.lateCountTarget.textContent = String(counts.late);
+        }
+        if (this.hasAbsentCountTarget) {
+            this.absentCountTarget.textContent = String(counts.absent);
+        }
+        if (this.hasExcusedCountTarget) {
+            this.excusedCountTarget.textContent = String(counts.excused);
+        }
     }
 }

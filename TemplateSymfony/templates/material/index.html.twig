@@ -1,0 +1,147 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Matériel — {{ team.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Matériel <em>{{ team.name }}</em></h1>
+        <p class="tactical-page-header__sub">
+            Le <strong>stock total club</strong> est la somme des quantités sur toutes vos équipes. Ci-dessous, la gestion détaillée pour <strong>{{ team.name }}</strong>.
+        </p>
+    </div>
+    <div class="material-stock__header-actions">
+        <a href="{{ path('app_team_dashboard', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Dashboard</a>
+        <a href="{{ path('app_team_calendar', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Calendrier</a>
+    </div>
+</div>
+
+<div class="tactical-page-body material-stock">
+    <section class="tactical-card material-stock__panel material-stock__panel--club" aria-labelledby="material-club-heading">
+        <div class="material-stock__panel-head">
+            <div>
+                <h2 id="material-club-heading" class="tactical-card__title">Stock total club</h2>
+                <p class="tactical-card__sub">Addition de toutes les quantités saisies sur les équipes de votre compte (chaque équipe a son propre inventaire ; le total les cumule).</p>
+            </div>
+            <div class="material-stock__club-badges">
+                <span class="tactical-badge tactical-badge--lime">Σ {{ clubStockTotal }} unités</span>
+                <span class="tactical-badge">{{ clubLineCount }} ligne{{ clubLineCount > 1 ? 's' : '' }}</span>
+            </div>
+        </div>
+
+        {% if clubBreakdown is empty %}
+            <p class="material-stock__empty">Aucune équipe. Créez une équipe pour commencer à suivre le matériel.</p>
+        {% else %}
+            <div class="tactical-table-wrap material-stock__table-wrap">
+                <table class="tactical-table material-stock__club-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Équipe</th>
+                            <th scope="col">Lignes</th>
+                            <th scope="col">Somme des quantités</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in clubBreakdown %}
+                            {% set isCurrent = row.team.id == team.id %}
+                            <tr class="{{ isCurrent ? 'material-stock__club-row--current' : '' }}">
+                                <td>
+                                    <strong>{{ row.team.name }}</strong>
+                                    {% if isCurrent %}<span class="tactical-badge tactical-badge--primary material-stock__you-badge">Vue actuelle</span>{% endif %}
+                                </td>
+                                <td>{{ row.lines }}</td>
+                                <td><strong>{{ row.qty }}</strong></td>
+                                <td class="material-stock__cell-link">
+                                    {% if not isCurrent %}
+                                        <a href="{{ path('app_team_material', {id: row.team.id}) }}" class="material-stock__link-sheet">Voir le stock</a>
+                                    {% else %}
+                                        <span class="material-stock__na">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="tactical-card material-stock__panel" aria-labelledby="material-team-heading">
+        <div class="material-stock__panel-head">
+            <div>
+                <h2 id="material-team-heading" class="tactical-card__title">Stock — {{ team.name }}</h2>
+                <p class="tactical-card__sub">Lignes libres (libellé, quantité, unité, notes) pour cette équipe uniquement.</p>
+            </div>
+            <span class="tactical-badge tactical-badge--primary">{{ teamLines|length }} ligne{{ teamLines|length > 1 ? 's' : '' }} · Σ {{ teamQtySum }}</span>
+        </div>
+
+        <form method="post" action="{{ path('app_team_material_new', {id: team.id}) }}" class="material-stock__quick-form tactical-form-card">
+            <input type="hidden" name="_token" value="{{ csrf_token('material_stock_new_' ~ team.id) }}">
+            <div class="material-stock__quick-fields">
+                <div class="tactical-form-group">
+                    <label class="tactical-form-label" for="t-label">Libellé</label>
+                    <input id="t-label" name="label" class="tactical-input" placeholder="Ex. Ballons T5, plots, maillots…" required>
+                </div>
+                <div class="tactical-form-group material-stock__field-qty">
+                    <label class="tactical-form-label" for="t-qty">Quantité</label>
+                    <input id="t-qty" name="quantity" type="number" min="0" value="0" class="tactical-input">
+                </div>
+                <div class="tactical-form-group material-stock__field-unit">
+                    <label class="tactical-form-label" for="t-unit">Unité</label>
+                    <input id="t-unit" name="unit" class="tactical-input" placeholder="pièce, jeu…">
+                </div>
+                <div class="tactical-form-group material-stock__field-order">
+                    <label class="tactical-form-label" for="t-order">Ordre</label>
+                    <input id="t-order" name="sort_order" type="number" value="0" class="tactical-input">
+                </div>
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="t-notes">Notes</label>
+                <textarea id="t-notes" name="notes" class="tactical-input" rows="2" placeholder="Couleur, emplacement, état…"></textarea>
+            </div>
+            <button type="submit" class="tactical-btn tactical-btn--primary">Ajouter une ligne</button>
+        </form>
+
+        {% if teamLines is empty %}
+            <p class="material-stock__empty">Aucune ligne pour cette équipe.</p>
+        {% else %}
+            <div class="tactical-table-wrap material-stock__table-wrap">
+                <table class="tactical-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Libellé</th>
+                            <th scope="col">Qté</th>
+                            <th scope="col">Unité</th>
+                            <th scope="col">Notes</th>
+                            <th scope="col">Ordre</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in teamLines %}
+                            <tr>
+                                <td><strong>{{ line.label }}</strong></td>
+                                <td>{{ line.quantity }}</td>
+                                <td>{{ line.unit ?: '—' }}</td>
+                                <td class="material-stock__cell-notes">{{ line.notes ?: '—' }}</td>
+                                <td>{{ line.sortOrder }}</td>
+                                <td class="material-stock__cell-actions">
+                                    <a href="{{ path('app_team_material_edit', {id: team.id, lineId: line.id}) }}" class="tactical-btn tactical-btn--sm tactical-btn--outline">Modifier</a>
+                                    <form method="post" action="{{ path('app_team_material_delete', {id: team.id, lineId: line.id}) }}" style="display:inline;" onsubmit="return confirm('Supprimer cette ligne ?');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('material_stock_delete_' ~ line.id) }}">
+                                        <button type="submit" class="tactical-btn tactical-btn--sm tactical-btn--danger">Supprimer</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -16,47 +16,16 @@
 
 <div class="tactical-page-body">
 
-    {# ── Créer un plan libre ── #}
-    <div class="fm-new-plans-row">
-        <div class="fm-new-plan-block">
-            <div class="fm-new-plan-block__head">
-                <strong>Plan libre</strong>
-                <span>Composition libre réutilisable en match, avec placements et consignes individuelles.</span>
-            </div>
-            <form method="post" action="{{ path('app_strategy_new', {teamId: team.id}) }}" class="fm-new-plan-block__form">
-                <input type="hidden" name="mode" value="free">
-                <input type="text" name="name" placeholder="Nom (ex: Plan A · Pressing haut)" class="fm-input">
-                <button type="submit" class="tactical-btn tactical-btn--outline">+ Plan libre</button>
-            </form>
+    <div class="tactical-card" style="margin-bottom:1rem;padding:1rem 1.25rem;">
+        <div style="margin-bottom:0.75rem;">
+            <strong style="display:block;font-size:0.95rem;margin-bottom:0.25rem;">Nouvelle tactique (plan libre)</strong>
+            <span style="font-size:0.8125rem;color:var(--on-surface-variant);">Terrain vide : placez les joueurs et les consignes comme vous voulez. Vous pourrez passer en mode formation depuis l’éditeur si besoin.</span>
         </div>
-
-        <div class="fm-new-plan-block fm-new-plan-block--formation">
-            <div class="fm-new-plan-block__head">
-                <strong>Plan formation</strong>
-                <span>Structure d'équipe réutilisable avec rôles, devoirs et consignes collectives.</span>
-            </div>
-            <form method="post" action="{{ path('app_strategy_new', {teamId: team.id}) }}" class="fm-new-plan-block__body">
-                <input type="hidden" name="mode" value="formation">
-                <input type="text" name="name" placeholder="Nom (ex: Plan B · 4-4-2 compact)" class="fm-input">
-                <div class="fm-formation-picker">
-                    {% for key, f in formations %}
-                        <label class="fm-formation-card">
-                            <input type="radio" name="formation" value="{{ key }}" {{ loop.first ? 'checked' : '' }}>
-                            <span class="fm-formation-card__box">
-                                <span class="fm-formation-card__label">{{ f.label }}</span>
-                                <span class="fm-formation-card__dots">
-                                    {% for slot in f.slots %}
-                                        <span class="fm-formation-card__dot fm-formation-card__dot--{{ slot.code|lower }}"
-                                              style="left:{{ slot.x }}%;top:{{ slot.y }}%"></span>
-                                    {% endfor %}
-                                </span>
-                            </span>
-                        </label>
-                    {% endfor %}
-                </div>
-                <button type="submit" class="tactical-btn tactical-btn--primary">Créer le plan formation</button>
-            </form>
-        </div>
+        <form method="post" action="{{ path('app_strategy_new', {teamId: team.id}) }}" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+            <input type="hidden" name="mode" value="free">
+            <input type="text" name="name" class="tactical-input" placeholder="Nom (optionnel)" style="flex:1;min-width:200px;">
+            <button type="submit" class="tactical-btn tactical-btn--primary">Créer</button>
+        </form>
     </div>
 
     {# ── Liste plans ── #}

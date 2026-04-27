@@ -8,8 +8,7 @@
 {% endblock %}
 
 {% block javascripts %}
-    {{ importmap('app') }}
-    {{ importmap('strategy') }}
+    {{ importmap(['app', 'agent-chat', 'strategy']) }}
 {% endblock %}
 
 {% block content %}

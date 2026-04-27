@@ -40,18 +40,30 @@ class Team
     #[ORM\OneToMany(targetEntity: TacticalStrategy::class, mappedBy: 'team', orphanRemoval: true, cascade: ['persist', 'remove'])]
     private Collection $strategies;
 
+    #[ORM\OneToMany(targetEntity: MaterialStock::class, mappedBy: 'team', orphanRemoval: true)]
+    private Collection $materialStocks;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
     public function __construct()
     {
-        $this->players    = new ArrayCollection();
-        $this->matchNotes = new ArrayCollection();
-        $this->strategies = new ArrayCollection();
-        $this->createdAt  = new \DateTimeImmutable();
+        $this->players         = new ArrayCollection();
+        $this->matchNotes     = new ArrayCollection();
+        $this->strategies     = new ArrayCollection();
+        $this->materialStocks = new ArrayCollection();
+        $this->createdAt      = new \DateTimeImmutable();
     }
 
     public function getStrategies(): Collection { return $this->strategies; }
+
+    /**
+     * @return Collection<int, MaterialStock>
+     */
+    public function getMaterialStocks(): Collection
+    {
+        return $this->materialStocks;
+    }
 
     public function getId(): ?int { return $this->id; }
 

@@ -37,6 +37,11 @@ class PlayerType extends AbstractType
                 'attr'  => ['placeholder' => '10', 'min' => 1, 'max' => 99],
                 'constraints' => [new NotBlank(), new Range(['min' => 1, 'max' => 99])],
             ])
+            ->add('licenseNumber', TextType::class, [
+                'label'    => 'N° de licence',
+                'required' => false,
+                'attr'     => ['placeholder' => 'Licence FFF / club'],
+            ])
             ->add('position', ChoiceType::class, [
                 'label'   => 'Poste',
                 'choices' => Player::POSITIONS,

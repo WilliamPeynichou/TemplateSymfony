@@ -24,10 +24,6 @@ return [
         'path' => './assets/composition.js',
         'entrypoint' => true,
     ],
-    'match' => [
-        'path' => './assets/match.js',
-        'entrypoint' => true,
-    ],
     'squad' => [
         'path' => './assets/squad.js',
         'entrypoint' => true,

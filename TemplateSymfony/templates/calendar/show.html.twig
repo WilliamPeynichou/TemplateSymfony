@@ -1,107 +1,101 @@
 {% extends 'layout/app.html.twig' %}
 {% block title %}Calendrier — {{ team.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/calendar.css') }}">
+{% endblock %}
+
 {% block content %}
+{% set frMonths = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+{% set monthLabel = frMonths[monthStart.format('n')] ~ ' ' ~ monthStart.format('Y') %}
+
 <div class="tactical-page-header">
     <div>
         <h1 class="tactical-page-header__title">Calendrier <em>{{ team.name }}</em></h1>
+        <p class="tactical-page-header__sub">Matchs et entraînements de l'équipe</p>
     </div>
-    <div style="display:flex;gap:0.75rem;">
+    <div style="display:flex;gap:0.75rem;align-items:center;">
         <a class="tactical-btn tactical-btn--primary" href="{{ path('app_training_new', {id: team.id}) }}">+ Nouvelle séance</a>
         <a class="tactical-btn tactical-btn--outline" href="{{ path('app_team_attendance_summary', {id: team.id}) }}">Synthèse présences</a>
         <a class="tactical-btn tactical-btn--outline" href="{{ path('app_team_calendar_ics', {id: team.id}) }}">Exporter ICS</a>
     </div>
 </div>
 
-<div class="tactical-page-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--space-md);">
+<div class="tactical-page-body" style="display:flex;flex-direction:column;gap:1.25rem;">
 
-    <div class="tactical-card">
-        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Présences saison</div>
-        {% if attendanceTotals.total == 0 %}
-            <p style="color:var(--on-surface-variant);font-size:0.875rem;margin:0;">Aucune présence enregistrée.</p>
-        {% else %}
-            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-sm);">
-                <div>
-                    <div class="tactical-badge tactical-badge--lime">{{ attendanceTotals.rate }}%</div>
-                    <p class="tactical-card__sub" style="margin:0.5rem 0 0;">Taux de présence</p>
-                </div>
-                <div>
-                    <div class="tactical-badge">{{ attendanceTotals.total }}</div>
-                    <p class="tactical-card__sub" style="margin:0.5rem 0 0;">Convocations saisies</p>
-                </div>
-                <div>
-                    <div class="tactical-badge">{{ attendanceTotals.absent }}</div>
-                    <p class="tactical-card__sub" style="margin:0.5rem 0 0;">Absences</p>
-                </div>
-                <div>
-                    <div class="tactical-badge">{{ attendanceTotals.excused }}</div>
-                    <p class="tactical-card__sub" style="margin:0.5rem 0 0;">Justifiées</p>
-                </div>
-            </div>
-        {% endif %}
+    {# Stats présences rapides #}
+    {% if attendanceTotals.total > 0 %}
+    <div class="cal-stats">
+        <div class="cal-stat">
+            <span class="cal-stat__value cal-stat__value--lime">{{ attendanceTotals.rate }}%</span>
+            <span class="cal-stat__label">Taux présences</span>
+        </div>
+        <div class="cal-stat">
+            <span class="cal-stat__value">{{ attendanceTotals.total }}</span>
+            <span class="cal-stat__label">Convocations</span>
+        </div>
+        <div class="cal-stat">
+            <span class="cal-stat__value">{{ attendanceTotals.absent }}</span>
+            <span class="cal-stat__label">Absences</span>
+        </div>
+        <div class="cal-stat">
+            <span class="cal-stat__value">{{ attendanceTotals.excused }}</span>
+            <span class="cal-stat__label">Justifiées</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Toolbar du calendrier #}
+    <div class="cal-toolbar">
+        <div class="cal-toolbar__nav">
+            <a class="cal-btn" href="{{ path('app_team_calendar', {id: team.id, month: prevMonth}) }}" aria-label="Mois précédent">‹</a>
+            <a class="cal-btn cal-btn--today" href="{{ path('app_team_calendar', {id: team.id, month: currentMonth}) }}">Aujourd'hui</a>
+            <a class="cal-btn" href="{{ path('app_team_calendar', {id: team.id, month: nextMonth}) }}" aria-label="Mois suivant">›</a>
+        </div>
+        <h2 class="cal-toolbar__title">{{ monthLabel|capitalize }}</h2>
+        <div class="cal-toolbar__legend">
+            <span class="cal-legend cal-legend--match"><span class="cal-legend__dot"></span>Match</span>
+            <span class="cal-legend cal-legend--training"><span class="cal-legend__dot"></span>Entraînement</span>
+        </div>
     </div>
 
-    <div class="tactical-card">
-        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Matchs</div>
-        {% if fixtures|length == 0 %}
-            <p style="color:var(--on-surface-variant);font-size:0.875rem;margin:0;">Aucun match planifié.</p>
-        {% else %}
-            <div class="tactical-table-wrap">
-                <table class="tactical-table">
-                    <tbody>
-                        {% for f in fixtures %}
-                            <tr>
-                                <td style="color:var(--on-surface-variant);font-size:0.8125rem;white-space:nowrap;">{{ f.matchDate|date('d/m/Y') }}</td>
-                                <td>
-                                    <div>vs {{ f.opponent }}</div>
-                                    {% if f.tacticalStrategy %}
-                                        <div style="color:var(--on-surface-variant);font-size:0.8125rem;margin-top:0.2rem;">
-                                            Tactique : {{ f.tacticalStrategy.name }}{% if f.tacticalStrategy.formation %} · {{ f.tacticalStrategy.formation }}{% endif %}
-                                        </div>
-                                    {% endif %}
-                                </td>
-                                <td style="color:var(--on-surface-variant);font-size:0.8125rem;">{{ f.venue }}</td>
-                                <td>
-                                    {% if f.status == 'played' %}
-                                        <span class="tactical-badge tactical-badge--lime">{{ f.scoreFor }}-{{ f.scoreAgainst }}</span>
-                                    {% else %}
-                                        <span class="tactical-badge">{{ f.status }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a class="tactical-btn tactical-btn--outline tactical-btn--sm"
-                                       href="{{ path('app_fixture_attendance', {id: team.id, fixtureId: f.id}) }}">Présences</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-    </div>
+    {# Grille du mois #}
+    <div class="cal-grid">
+        <div class="cal-grid__head">
+            {% for d in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}
+                <div class="cal-grid__head-cell">{{ d }}</div>
+            {% endfor %}
+        </div>
 
-    <div class="tactical-card">
-        <div class="tactical-card__title" style="margin-bottom:var(--space-sm);">Entraînements</div>
-        {% if trainings|length == 0 %}
-            <p style="color:var(--on-surface-variant);font-size:0.875rem;margin:0;">Aucune séance planifiée.</p>
-        {% else %}
-            <div class="tactical-table-wrap">
-                <table class="tactical-table">
-                    <tbody>
-                        {% for t in trainings %}
-                            <tr>
-                                <td style="color:var(--on-surface-variant);font-size:0.8125rem;white-space:nowrap;">{{ t.startsAt|date('d/m/Y H:i') }}</td>
-                                <td>{{ t.title }}</td>
-                                <td style="color:var(--on-surface-variant);font-size:0.8125rem;">{{ t.durationMinutes }} min{% if t.focus %} · {{ t.focus }}{% endif %}</td>
-                                <td>
-                                    <a class="tactical-btn tactical-btn--outline tactical-btn--sm"
-                                       href="{{ path('app_training_attendance', {id: team.id, sessionId: t.id}) }}">Présences</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        {% for week in weeks %}
+            <div class="cal-grid__row">
+                {% for day in week %}
+                    <div class="cal-day {{ day.isCurrent ? '' : 'cal-day--off' }} {{ day.isToday ? 'cal-day--today' : '' }}">
+                        <div class="cal-day__num">{{ day.dayNum }}</div>
+                        {% if day.events|length > 0 %}
+                            <div class="cal-day__events">
+                                {% for ev in day.events %}
+                                    <div class="cal-event cal-event--{{ ev.type }}" title="{{ ev.title }} — {{ ev.meta }}">
+                                        <a href="{{ ev.url }}" class="cal-event__main">
+                                            <span class="cal-event__time">{{ ev.time }}</span>
+                                            <span class="cal-event__title">{{ ev.title }}</span>
+                                        </a>
+                                        {% if ev.type == 'match' and ev.strategyName %}
+                                            <a href="{{ ev.strategyUrl }}"
+                                               class="cal-event__tactic"
+                                               title="Plan tactique : {{ ev.strategyName }}{% if ev.formation %} ({{ ev.formation }}){% endif %}">
+                                                ⬡ {{ ev.formation ?: ev.strategyName }}
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
             </div>
-        {% endif %}
+        {% endfor %}
     </div>
 
 </div>

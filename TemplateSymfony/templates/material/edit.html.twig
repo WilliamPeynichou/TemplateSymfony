@@ -1,0 +1,52 @@
+{% extends 'layout/app.html.twig' %}
+{% block title %}Modifier — {{ line.label }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tactical-page-header">
+    <div>
+        <h1 class="tactical-page-header__title">Modifier <em>{{ line.label }}</em></h1>
+        <p class="tactical-page-header__sub">{{ team.name }}</p>
+    </div>
+    <a href="{{ path('app_team_material', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">← Matériel</a>
+</div>
+
+<div class="tactical-page-body">
+    <div class="tactical-card material-stock__edit-card">
+        <form method="post" action="{{ path('app_team_material_edit', {id: team.id, lineId: line.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('material_stock_edit_' ~ line.id) }}">
+
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="label">Libellé</label>
+                <input id="label" name="label" class="tactical-input" value="{{ line.label }}" required>
+            </div>
+            <div class="material-stock__quick-fields">
+                <div class="tactical-form-group material-stock__field-qty">
+                    <label class="tactical-form-label" for="quantity">Quantité</label>
+                    <input id="quantity" name="quantity" type="number" min="0" value="{{ line.quantity }}" class="tactical-input">
+                </div>
+                <div class="tactical-form-group material-stock__field-unit">
+                    <label class="tactical-form-label" for="unit">Unité</label>
+                    <input id="unit" name="unit" class="tactical-input" value="{{ line.unit ?? '' }}" placeholder="pièce, jeu…">
+                </div>
+                <div class="tactical-form-group material-stock__field-order">
+                    <label class="tactical-form-label" for="sort_order">Ordre d’affichage</label>
+                    <input id="sort_order" name="sort_order" type="number" value="{{ line.sortOrder }}" class="tactical-input">
+                </div>
+            </div>
+            <div class="tactical-form-group">
+                <label class="tactical-form-label" for="notes">Notes</label>
+                <textarea id="notes" name="notes" class="tactical-input" rows="3">{{ line.notes ?? '' }}</textarea>
+            </div>
+
+            <div class="tactical-form-actions">
+                <button type="submit" class="tactical-btn tactical-btn--primary">Enregistrer</button>
+                <a href="{{ path('app_team_material', {id: team.id}) }}" class="tactical-btn tactical-btn--outline">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

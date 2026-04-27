@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Fixture;
+use App\Entity\FormationSlot;
 use App\Entity\Player;
 use App\Entity\TacticalStrategy;
 use App\Entity\Team;
@@ -11,6 +12,7 @@ use App\Repository\AttendanceRepository;
 use App\Repository\PlayerMatchStatRepository;
 use App\Repository\TacticalStrategyRepository;
 use App\Repository\TeamRepository;
+use App\Service\FormationLibrary;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -55,7 +57,7 @@ class MatchController extends AbstractController
             $strategies = $strategyRepository->findByTeam($team);
             $strategiesByTeam[$team->getId()] = $this->buildStrategyBankForTeam($strategies);
 
-            if ($selectedTeam instanceof Team && $team->getId() === $selectedTeam->getId()) {
+            if ($selectedTeam instanceof Team && $team->getId() === $selectedTeam->getId() && ($matchContext['strategySource'] ?? 'existing') === 'existing') {
                 $selectedStrategyId = (int) $matchContext['strategyId'];
                 foreach ($strategies as $strategyCandidate) {
                     if ($selectedStrategyId > 0 && $strategyCandidate->getId() === $selectedStrategyId) {
@@ -118,7 +120,10 @@ class MatchController extends AbstractController
                 }
 
                 $strategy = null;
-                if (($matchContext['strategyId'] ?? 0) > 0) {
+                if (($matchContext['strategySource'] ?? 'existing') === 'create') {
+                    $strategy = $this->createStrategyFromMatchContext($selectedTeam, $opponentName, $matchContext, $em);
+                    $strategy->incrementUsage();
+                } elseif (($matchContext['strategyId'] ?? 0) > 0) {
                     $candidate = $strategyRepository->find($matchContext['strategyId']);
                     if ($candidate instanceof TacticalStrategy && $candidate->getTeam()?->getId() === $selectedTeam->getId()) {
                         $strategy = $candidate;
@@ -150,15 +155,6 @@ class MatchController extends AbstractController
                 $matchContext['strategyId'] = $strategy?->getId() ?? 0;
                 $matchContext['strategyName'] = $strategy?->getName() ?? '';
 
-                $request->getSession()->set('match_preparation', [
-                    'scenario' => 'real_vs_fictional',
-                    'context' => $matchContext,
-                    'fixtureId' => $fixture?->getId(),
-                    'homeInsights' => $selectedTeamPreview,
-                    'home' => $this->buildRealTeamData($selectedTeam, 'home', $selectedTeam->getName(), $attendanceRepository, $playerMatchStatRepository),
-                    'away' => $this->buildFictionalTeamData('away', $opponentName, ''),
-                ]);
-
                 $this->addFlash('success', $fixture instanceof Fixture
                     ? ($strategy instanceof TacticalStrategy
                         ? 'Match ajouté au calendrier et tactique assignée.'
@@ -167,7 +163,21 @@ class MatchController extends AbstractController
                         ? 'Tactique sélectionnée pour ce match.'
                         : 'Préparation de match enregistrée.'));
 
-                return $this->redirectToRoute('app_match_board');
+                if ($fixture instanceof Fixture) {
+                    return $this->redirectToRoute('app_team_calendar', [
+                        'id'    => $selectedTeam->getId(),
+                        'month' => $fixture->getMatchDate()->format('Y-m'),
+                    ]);
+                }
+
+                if ($strategy instanceof TacticalStrategy) {
+                    return $this->redirectToRoute('app_strategy_edit', [
+                        'teamId' => $selectedTeam->getId(),
+                        'id' => $strategy->getId(),
+                    ]);
+                }
+
+                return $this->redirectToRoute('app_match_prepare', ['team_id' => $selectedTeam->getId()]);
             }
         }
 
@@ -185,23 +195,6 @@ class MatchController extends AbstractController
                 Fixture::COMPETITION_LEAGUE => 'Championnat',
                 Fixture::COMPETITION_CUP => 'Coupe',
             ],
-        ]);
-    }
-
-    #[Route('/board', name: 'app_match_board', methods: ['GET'])]
-    public function board(Request $request): Response
-    {
-        $preparation = $request->getSession()->get('match_preparation');
-        if (!is_array($preparation) || !isset($preparation['home'], $preparation['away'])) {
-            $this->addFlash('error', 'Préparez d\'abord un match avant d\'ouvrir le terrain.');
-            return $this->redirectToRoute('app_match_prepare');
-        }
-
-        return $this->render('match/board.html.twig', [
-            'match' => $preparation,
-            'context' => $preparation['context'] ?? null,
-            'homeInsights' => $preparation['homeInsights'] ?? null,
-            'awayInsights' => $preparation['awayInsights'] ?? null,
         ]);
     }
 
@@ -381,9 +374,69 @@ class MatchController extends AbstractController
             'setPiecesPlan' => trim((string) $request->request->get('set_pieces_plan', $request->query->get('set_pieces_plan', ''))),
             'watchouts' => trim((string) $request->request->get('watchouts', $request->query->get('watchouts', ''))),
             'strategyId' => (int) $request->request->get('strategy_id', $request->query->get('strategy_id', 0)),
+            'strategySource' => \in_array($request->request->get('strategy_source', $request->query->get('strategy_source', 'existing')), ['existing', 'create'], true)
+                ? (string) $request->request->get('strategy_source', $request->query->get('strategy_source', 'existing'))
+                : 'existing',
+            'newStrategyName' => trim((string) $request->request->get('new_strategy_name', $request->query->get('new_strategy_name', ''))),
+            'newStrategyMode' => \in_array($request->request->get('new_strategy_mode', $request->query->get('new_strategy_mode', TacticalStrategy::MODE_FORMATION)), [TacticalStrategy::MODE_FREE, TacticalStrategy::MODE_FORMATION], true)
+                ? (string) $request->request->get('new_strategy_mode', $request->query->get('new_strategy_mode', TacticalStrategy::MODE_FORMATION))
+                : TacticalStrategy::MODE_FORMATION,
             'strategyName' => '',
             'strategyMode' => '',
         ];
+    }
+
+    private function createStrategyFromMatchContext(
+        Team $team,
+        string $opponentName,
+        array $matchContext,
+        EntityManagerInterface $em,
+    ): TacticalStrategy {
+        $formation = (string) ($matchContext['shape'] ?: '4-3-3');
+        if (!\in_array($formation, FormationLibrary::keys(), true)) {
+            $formation = '4-3-3';
+        }
+
+        $mode = (string) ($matchContext['newStrategyMode'] ?? TacticalStrategy::MODE_FORMATION);
+        if (!\in_array($mode, [TacticalStrategy::MODE_FREE, TacticalStrategy::MODE_FORMATION], true)) {
+            $mode = TacticalStrategy::MODE_FORMATION;
+        }
+
+        $name = trim((string) ($matchContext['newStrategyName'] ?? ''));
+        if ($name === '') {
+            $name = 'Tactique vs '.($opponentName !== '' ? $opponentName : 'adversaire').' - '.(new \DateTimeImmutable())->format('d/m/Y');
+        }
+
+        $strategy = (new TacticalStrategy())
+            ->setTeam($team)
+            ->setName($name)
+            ->setMode($mode)
+            ->setFormation($formation)
+            ->setDescription(($matchContext['objective'] ?? '') !== '' ? $matchContext['objective'] : null)
+            ->setOutOfPossessionNotes(($matchContext['pressingPlan'] ?? '') !== '' ? $matchContext['pressingPlan'] : null)
+            ->setInPossessionNotes(($matchContext['inPossessionPlan'] ?? '') !== '' ? $matchContext['inPossessionPlan'] : null)
+            ->setTransitionNotes(($matchContext['transitionPlan'] ?? '') !== '' ? $matchContext['transitionPlan'] : null)
+            ->setSetPieceNotes(($matchContext['setPiecesPlan'] ?? '') !== '' ? $matchContext['setPiecesPlan'] : null);
+
+        if ($strategy->isFormation()) {
+            foreach (FormationLibrary::get($formation)['slots'] as $slotData) {
+                $slot = (new FormationSlot())
+                    ->setStrategy($strategy)
+                    ->setSlotIndex($slotData['index'])
+                    ->setPositionCode($slotData['code'])
+                    ->setLabel($slotData['label'])
+                    ->setRole($slotData['role'])
+                    ->setDuty($slotData['duty'])
+                    ->setPosX($slotData['x'])
+                    ->setPosY($slotData['y']);
+                $strategy->getSlots()->add($slot);
+                $em->persist($slot);
+            }
+        }
+
+        $em->persist($strategy);
+
+        return $strategy;
     }
 
     /**

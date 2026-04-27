@@ -32,5 +32,14 @@
             </div>
         {{ form_end(form) }}
     </div>
+    <div class="tactical-form-card danger-zone">
+        <h2 class="tactical-card__title">Zone sensible</h2>
+        <p class="tactical-card__sub">La suppression retire l'équipe et ses données associées. Cette action reste volontairement séparée des actions courantes.</p>
+        <form method="post" action="{{ path('app_team_delete', {id: team.id}) }}"
+              onsubmit="return confirm('Supprimer définitivement cette équipe ?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_team_' ~ team.id) }}">
+            <button type="submit" class="tactical-btn tactical-btn--danger">Supprimer l'équipe</button>
+        </form>
+    </div>
 </div>
 {% endblock %}
